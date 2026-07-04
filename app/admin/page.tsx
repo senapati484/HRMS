@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface User {
   _id: string;
@@ -34,11 +35,23 @@ interface Anomaly {
   refId?: string;
 }
 
-export default function AdminDashboard() {
+function AdminDashboard() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [employees, setEmployees] = useState<User[]>([]);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
-  const [activeTab, setActiveTab] = useState<"employees" | "leaves" | "anomalies" | "payroll">("employees");
+
+  // Sync active tab from URL ?tab= param — sidebar links set this
+  const activeTab = (searchParams.get("tab") || "employees") as
+    | "employees"
+    | "leaves"
+    | "anomalies"
+    | "payroll";
+
+  function setActiveTab(tab: string) {
+    router.push(`/admin?tab=${tab}`);
+  }
 
   // Selection states for payroll updating
   const [selectedEmp, setSelectedEmp] = useState<User | null>(null);
@@ -476,5 +489,17 @@ export default function AdminDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 flex items-center justify-center min-h-96">
+        <div className="text-white animate-pulse">Loading admin panel...</div>
+      </div>
+    }>
+      <AdminDashboard />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import LogoutButton from "./LogoutButton";
 
@@ -9,16 +9,25 @@ interface NavItem {
   href: string;
   label: string;
   icon: string;
-  adminOnly?: boolean;
+  tab?: string; // for admin tab switching
 }
 
-const NAV_ITEMS: NavItem[] = [
+// Employee nav — personal routes
+const EMPLOYEE_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "⊞" },
   { href: "/attendance", label: "Attendance", icon: "📅" },
   { href: "/leave", label: "Leave & Time-off", icon: "🏖️" },
   { href: "/payroll", label: "Payroll", icon: "💰" },
   { href: "/profile", label: "My Profile", icon: "👤" },
-  { href: "/admin", label: "Admin Panel", icon: "⚙️", adminOnly: true },
+];
+
+// Admin nav — all sections live inside /admin page via ?tab= param
+const ADMIN_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: "⊞" },
+  { href: "/admin?tab=employees", label: "Employees", icon: "👥", tab: "employees" },
+  { href: "/admin?tab=leaves", label: "Leave Requests", icon: "🏖️", tab: "leaves" },
+  { href: "/admin?tab=payroll", label: "Payroll Manager", icon: "💰", tab: "payroll" },
+  { href: "/admin?tab=anomalies", label: "Anomaly Alerts", icon: "🚨", tab: "anomalies" },
 ];
 
 interface SidebarProps {
@@ -34,7 +43,11 @@ interface SidebarProps {
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+
+  const isAdmin = user.role === "admin";
+  const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
 
   const initials = user.name
     .split(" ")
@@ -43,9 +56,18 @@ export default function Sidebar({ user }: SidebarProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.adminOnly || user.role === "admin"
-  );
+  // Determine active item — for admin tab items match by tab param
+  function isActive(item: NavItem) {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const currentTab = params.get("tab");
+      if (item.tab) return pathname === "/admin" && currentTab === item.tab;
+      if (item.href === "/dashboard") return pathname === "/dashboard";
+    }
+    // SSR fallback
+    if (item.tab) return false;
+    return pathname === item.href;
+  }
 
   return (
     <aside
@@ -72,13 +94,27 @@ export default function Sidebar({ user }: SidebarProps) {
             >
               H
             </div>
-            <span className="font-bold text-white text-sm">HRMS</span>
+            <div>
+              <span className="font-bold text-white text-sm">HRMS</span>
+              {isAdmin && (
+                <span
+                  className="ml-2 text-xs px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)" }}
+                >
+                  Admin
+                </span>
+              )}
+            </div>
           </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-1.5 rounded-lg transition-colors hover:bg-white/5 text-xs"
-          style={{ color: "var(--muted)", marginLeft: collapsed ? "auto" : "0", marginRight: collapsed ? "auto" : "0" }}
+          style={{
+            color: "var(--muted)",
+            marginLeft: collapsed ? "auto" : "0",
+            marginRight: collapsed ? "auto" : "0",
+          }}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? "→" : "←"}
@@ -87,8 +123,16 @@ export default function Sidebar({ user }: SidebarProps) {
 
       {/* Nav items */}
       <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const isActive = pathname === item.href;
+        {!collapsed && (
+          <p
+            className="text-xs font-semibold px-3 pb-2 tracking-widest uppercase"
+            style={{ color: "var(--muted)", opacity: 0.5 }}
+          >
+            {isAdmin ? "Administration" : "Navigation"}
+          </p>
+        )}
+        {navItems.map((item) => {
+          const active = isActive(item);
           return (
             <Link
               key={item.href}
@@ -96,19 +140,19 @@ export default function Sidebar({ user }: SidebarProps) {
               title={collapsed ? item.label : undefined}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium group"
               style={{
-                background: isActive ? "rgba(99,102,241,0.15)" : "transparent",
-                color: isActive ? "var(--primary)" : "var(--muted)",
+                background: active ? "rgba(99,102,241,0.15)" : "transparent",
+                color: active ? "var(--primary)" : "var(--muted)",
               }}
             >
               <span className="text-base flex-shrink-0">{item.icon}</span>
               {!collapsed && (
-                <span className="group-hover:text-white transition-colors">
+                <span className="group-hover:text-white transition-colors flex-1">
                   {item.label}
                 </span>
               )}
-              {isActive && !collapsed && (
+              {active && !collapsed && (
                 <span
-                  className="ml-auto w-1.5 h-1.5 rounded-full"
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                   style={{ background: "var(--primary)" }}
                 />
               )}
@@ -118,10 +162,7 @@ export default function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User info + logout */}
-      <div
-        className="border-t p-3"
-        style={{ borderColor: "var(--card-border)" }}
-      >
+      <div className="border-t p-3" style={{ borderColor: "var(--card-border)" }}>
         <div className="flex items-center gap-3 mb-2">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden"
