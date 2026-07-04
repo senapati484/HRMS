@@ -57,7 +57,8 @@ function AdminDashboard() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
 
   // Sync active tab from URL ?tab= param — sidebar links set this
-  const activeTab = (searchParams.get("tab") || "employees") as
+  const activeTab = (searchParams.get("tab") || "dashboard") as
+    | "dashboard"
     | "employees"
     | "leaves"
     | "anomalies"
@@ -200,6 +201,7 @@ function AdminDashboard() {
         {/* Navigation Tabs */}
         <div className="flex gap-2 border-b mb-6 overflow-x-auto" style={{ borderColor: "var(--card-border)" }}>
           {[
+            { id: "dashboard", label: "Overview" },
             { id: "employees", label: "Employees", count: employees.length },
             { id: "leaves", label: "Pending Leaves", count: pendingLeaves.length },
             { id: "anomalies", label: "Anomaly Alerts", count: anomalies.length },
@@ -231,6 +233,108 @@ function AdminDashboard() {
         </div>
 
         {/* Tab Contents */}
+        {activeTab === "dashboard" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Card 1: Employees */}
+            <div className="rounded-2xl p-6 glass-panel hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-48">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] font-precise">Employees</p>
+                  <h3 className="text-3xl font-extrabold text-foreground mt-2 font-precise">{employees.length}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                  <Users size={20} />
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveTab("employees")}
+                className="w-full py-2.5 rounded-xl border border-indigo-500/20 text-xs font-bold text-indigo-500 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all cursor-pointer flex items-center justify-center gap-1.5 font-precise uppercase tracking-wider"
+              >
+                Manage Directory <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Card 2: Leaves */}
+            <div className="rounded-2xl p-6 glass-panel hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-48">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] font-precise">Pending Leaves</p>
+                  <h3 className="text-3xl font-extrabold text-foreground mt-2 font-precise">{pendingLeaves.length}</h3>
+                </div>
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: pendingLeaves.length > 0 ? "var(--warning-bg)" : "var(--success-bg)",
+                    color: pendingLeaves.length > 0 ? "var(--warning)" : "var(--success)",
+                  }}
+                >
+                  <Palmtree size={20} />
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveTab("leaves")}
+                className="w-full py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 font-precise uppercase tracking-wider hover:opacity-90"
+                style={{
+                  borderColor: pendingLeaves.length > 0 ? "var(--warning-border)" : "var(--success-border)",
+                  color: pendingLeaves.length > 0 ? "var(--warning)" : "var(--success)",
+                  background: pendingLeaves.length > 0 ? "var(--warning-bg)" : "var(--success-bg)",
+                }}
+              >
+                Review Requests <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Card 3: Anomalies */}
+            <div className="rounded-2xl p-6 glass-panel hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-48">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] font-precise">Anomaly Alerts</p>
+                  <h3 className="text-3xl font-extrabold text-foreground mt-2 font-precise">{anomalies.length}</h3>
+                </div>
+                <div 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${anomalies.length > 0 ? "animate-pulse" : ""}`}
+                  style={{
+                    background: anomalies.length > 0 ? "var(--danger-bg)" : "var(--success-bg)",
+                    color: anomalies.length > 0 ? "var(--danger)" : "var(--success)",
+                  }}
+                >
+                  <AlertTriangle size={20} />
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveTab("anomalies")}
+                className="w-full py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 font-precise uppercase tracking-wider hover:opacity-90"
+                style={{
+                  borderColor: anomalies.length > 0 ? "var(--danger-border)" : "var(--success-border)",
+                  color: anomalies.length > 0 ? "var(--danger)" : "var(--success)",
+                  background: anomalies.length > 0 ? "var(--danger-bg)" : "var(--success-bg)",
+                }}
+              >
+                Investigate Alerts <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Card 4: Payroll */}
+            <div className="rounded-2xl p-6 glass-panel hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-48">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] font-precise">Payroll Status</p>
+                  <h3 className="text-3xl font-extrabold text-foreground mt-2 font-precise">Active</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                  <CircleDollarSign size={20} />
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveTab("payroll")}
+                className="w-full py-2.5 rounded-xl border border-indigo-500/20 text-xs font-bold text-indigo-500 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all cursor-pointer flex items-center justify-center gap-1.5 font-precise uppercase tracking-wider"
+              >
+                Configure Payroll <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeTab === "employees" && (
           <div className="rounded-2xl border overflow-hidden glass-panel">
             <div className="overflow-x-auto">
@@ -266,9 +370,9 @@ function AdminDashboard() {
                         <span
                           className="text-[10px] px-2.5 py-0.5 rounded-full font-bold border uppercase tracking-wider font-precise"
                           style={{
-                            background: emp.isVerified ? "rgba(16, 185, 129, 0.08)" : "rgba(245, 158, 11, 0.08)",
+                            background: emp.isVerified ? "var(--success-bg)" : "var(--warning-bg)",
                             color: emp.isVerified ? "var(--success)" : "var(--warning)",
-                            borderColor: emp.isVerified ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)",
+                            borderColor: emp.isVerified ? "var(--success-border)" : "var(--warning-border)",
                           }}
                         >
                           {emp.isVerified ? "Verified" : "Pending Approval"}
@@ -361,10 +465,17 @@ function AdminDashboard() {
 
         {activeTab === "anomalies" && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 flex items-start gap-2">
-              <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div 
+              className="p-4 rounded-xl text-xs border flex items-start gap-2"
+              style={{
+                background: "var(--warning-bg)",
+                borderColor: "var(--warning-border)",
+                color: "var(--warning)",
+              }}
+            >
+              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "var(--warning)" }} />
               <div>
-                <strong>Operational Intelligence Alerts:</strong> Flags generated automatically based on stale leave approval delays (7+ days pending) and abnormal absence thresholds (3+ absences this month).
+                <strong className="font-bold">Operational Intelligence Alerts:</strong> Flags generated automatically based on stale leave approval delays (7+ days pending) and abnormal absence thresholds (3+ absences this month).
               </div>
             </div>
             {anomalies.length === 0 ? (
@@ -465,9 +576,9 @@ function AdminDashboard() {
                     <div
                       className="p-4 rounded-xl text-sm font-semibold border flex items-center gap-2"
                       style={{
-                        background: payrollMsg.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                        background: payrollMsg.startsWith("✓") ? "var(--success-bg)" : "var(--danger-bg)",
                         color: payrollMsg.startsWith("✓") ? "var(--success)" : "var(--danger)",
-                        borderColor: payrollMsg.startsWith("✓") ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"
+                        borderColor: payrollMsg.startsWith("✓") ? "var(--success-border)" : "var(--danger-border)"
                       }}
                     >
                       {payrollMsg.startsWith("✓") ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}

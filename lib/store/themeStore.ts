@@ -7,10 +7,10 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  theme: "dark",
+  theme: "light",
   initTheme: () => {
     if (typeof window === "undefined") return;
-    const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "dark";
+    const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "light";
     set({ theme: savedTheme });
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(savedTheme);

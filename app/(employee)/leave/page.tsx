@@ -30,19 +30,19 @@ interface ParsedLeave {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; color: string; border: string }> = {
     Pending: {
-      bg: "rgba(245,158,11,0.08)",
+      bg: "var(--warning-bg)",
       color: "var(--warning)",
-      border: "rgba(245,158,11,0.2)",
+      border: "var(--warning-border)",
     },
     Approved: {
-      bg: "rgba(16,185,129,0.08)",
+      bg: "var(--success-bg)",
       color: "var(--success)",
-      border: "rgba(16,185,129,0.2)",
+      border: "var(--success-border)",
     },
     Rejected: {
-      bg: "rgba(239,68,68,0.08)",
+      bg: "var(--danger-bg)",
       color: "var(--danger)",
-      border: "rgba(239,68,68,0.2)",
+      border: "var(--danger-border)",
     },
   };
   const s = styles[status] || {
@@ -177,7 +177,7 @@ export default function LeavePage() {
             {confidence && (
               <p className="text-[10px] mt-2 font-mono flex items-center gap-1" style={{ color: "var(--muted)" }}>
                 <CheckCircle2 size={12} className="text-emerald-400" /> Form pre-filled ·{" "}
-                <span className="text-amber-400 font-bold">Amber = Review before submitting</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">Amber = Review before submitting</span>
               </p>
             )}
           </div>
@@ -189,13 +189,9 @@ export default function LeavePage() {
               <div
                 className="mb-4 p-3 rounded-lg text-sm font-semibold border flex items-center gap-2"
                 style={{
-                  background: submitMsg.startsWith("✓")
-                    ? "rgba(16,185,129,0.08)"
-                    : "rgba(239,68,68,0.08)",
+                  background: submitMsg.startsWith("✓") ? "var(--success-bg)" : "var(--danger-bg)",
                   color: submitMsg.startsWith("✓") ? "var(--success)" : "var(--danger)",
-                  borderColor: submitMsg.startsWith("✓")
-                    ? "rgba(16,185,129,0.2)"
-                    : "rgba(239,68,68,0.2)",
+                  borderColor: submitMsg.startsWith("✓") ? "var(--success-border)" : "var(--danger-border)",
                 }}
               >
                 {submitMsg.startsWith("✓") ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}

@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   /* LIGHT MODE */
@@ -13,9 +14,19 @@
   --primary-hover: #4338ca;
   --accent: #7c3aed;
   --muted: #475569;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  
+  /* Status variables - Light Mode */
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.08);
+  --success-border: rgba(5, 150, 105, 0.2);
+  
+  --warning: #b45309;
+  --warning-bg: rgba(180, 83, 9, 0.08);
+  --warning-border: rgba(180, 83, 9, 0.25);
+  
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-border: rgba(220, 38, 38, 0.2);
   
   --font-heading: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -34,6 +45,19 @@
   --primary-hover: #4f46e5;
   --accent: #a855f7;
   --muted: #94a3b8;
+  
+  /* Status variables - Dark Mode */
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.1);
+  --success-border: rgba(52, 211, 153, 0.15);
+  
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --warning-border: rgba(251, 191, 36, 0.15);
+  
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --danger-border: rgba(248, 113, 113, 0.15);
 }
 
 * {

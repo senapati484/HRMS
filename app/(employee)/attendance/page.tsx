@@ -13,9 +13,9 @@ interface AttendanceRecord {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    Present: "rgba(16,185,129,0.12)",
-    HalfDay: "rgba(245,158,11,0.12)",
-    Absent: "rgba(239,68,68,0.12)",
+    Present: "var(--success-bg)",
+    HalfDay: "var(--warning-bg)",
+    Absent: "var(--danger-bg)",
   };
   const text: Record<string, string> = {
     Present: "var(--success)",
@@ -23,9 +23,9 @@ function StatusBadge({ status }: { status: string }) {
     Absent: "var(--danger)",
   };
   const borderColors: Record<string, string> = {
-    Present: "rgba(16,185,129,0.25)",
-    HalfDay: "rgba(245,158,11,0.25)",
-    Absent: "rgba(239,68,68,0.25)",
+    Present: "var(--success-border)",
+    HalfDay: "var(--warning-border)",
+    Absent: "var(--danger-border)",
   };
 
   return (
@@ -174,13 +174,13 @@ export default function AttendancePage() {
             onClick={handleCheckInOut}
             disabled={isDisabled}
             className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-              isDisabled ? "cursor-not-allowed opacity-75" : "text-white cursor-pointer hover:scale-[1.02]"
+              isDisabled ? "cursor-not-allowed" : "text-white cursor-pointer hover:scale-[1.02]"
             }`}
             style={{
               background: isDisabled
-                ? "none"
+                ? "var(--card-border)"
                 : "linear-gradient(135deg, var(--primary), var(--accent))",
-              border: isDisabled ? "1px solid var(--card-border)" : "none",
+              border: "1px solid var(--card-border)",
               color: isDisabled ? "var(--muted)" : "#ffffff",
             }}
           >
@@ -198,13 +198,9 @@ export default function AttendancePage() {
         <div
           className="p-4 rounded-xl text-sm font-semibold border flex items-center gap-2"
           style={{
-            background: actionMsg.startsWith("✓")
-              ? "rgba(16,185,129,0.08)"
-              : "rgba(239,68,68,0.08)",
+            background: actionMsg.startsWith("✓") ? "var(--success-bg)" : "var(--danger-bg)",
             color: actionMsg.startsWith("✓") ? "var(--success)" : "var(--danger)",
-            borderColor: actionMsg.startsWith("✓")
-              ? "rgba(16,185,129,0.2)"
-              : "rgba(239,68,68,0.2)",
+            borderColor: actionMsg.startsWith("✓") ? "var(--success-border)" : "var(--danger-border)",
           }}
         >
           {actionMsg.startsWith("✓") ? (

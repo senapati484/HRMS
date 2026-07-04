@@ -37,7 +37,7 @@ const EMPLOYEE_NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin?tab=employees", label: "Employees", icon: Users, tab: "employees" },
   { href: "/admin?tab=leaves", label: "Leave Requests", icon: Palmtree, tab: "leaves" },
   { href: "/admin?tab=payroll", label: "Payroll Manager", icon: CircleDollarSign, tab: "payroll" },
@@ -86,6 +86,9 @@ function SidebarInner({ user }: SidebarProps) {
   function isActive(item: NavItem): boolean {
     if (item.tab) {
       return pathname === "/admin" && currentTab === item.tab;
+    }
+    if (item.href === "/admin") {
+      return pathname === "/admin" && (!currentTab || currentTab === "dashboard");
     }
     return pathname === item.href;
   }
