@@ -22,6 +22,18 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (decoded.role === "admin" && decoded.userId !== userId) {
+      const [admin, target] = await Promise.all([
+        User.findById(decoded.userId, "companyName").lean(),
+        User.findById(userId, "companyName").lean(),
+      ]);
+      const adminCompany = (admin as any)?.companyName;
+      const targetCompany = (target as any)?.companyName;
+      if (!adminCompany || adminCompany !== targetCompany) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     await connectDB();
 
     const payroll = (await Payroll.findOne({ userId }).populate("userId", "name employeeId").lean({ virtuals: true })) as any;

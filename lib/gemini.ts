@@ -1,13 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY is not set in environment variables.");
+const MODEL = "gemini-2.5-flash";
+
+let _ai: GoogleGenAI | null = null;
+function getAI() {
+  if (!_ai) {
+    if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set in environment variables.");
+    _ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return _ai;
 }
-
-// Single shared client — initialized once per cold start
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-const MODEL = "gemini-2.5-flash"; // Recommended default: fast, smart, multimodal
 
 /**
  * Generates a structured JSON response from Gemini.
@@ -22,7 +24,7 @@ export async function generateStructured<T>(
 Return ONLY valid JSON that matches this schema: ${schemaDescription}
 Do NOT include markdown code fences, explanations, or any text outside the JSON object.`;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: MODEL,
     contents: `${systemInstruction}\n\n${prompt}`,
   });
@@ -47,7 +49,7 @@ Do NOT include markdown code fences, explanations, or any text outside the JSON 
  * Calls Gemini for a plain-text answer (HR assistant, Q&A, etc.)
  */
 export async function generateText(prompt: string): Promise<string> {
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: MODEL,
     contents: prompt,
   });
@@ -61,7 +63,7 @@ export async function generateTextStream(
   prompt: string,
   onChunk: (chunk: string) => void
 ): Promise<void> {
-  const responseStream = await ai.models.generateContentStream({
+  const responseStream = await getAI().models.generateContentStream({
     model: MODEL,
     contents: prompt,
   });

@@ -34,9 +34,13 @@ export async function GET(request: Request) {
       const userId = targetUserId && decoded.role === "admin" ? targetUserId : decoded.userId;
 
       if (decoded.role === "admin" && targetUserId) {
-        const admin = await User.findById(decoded.userId, "companyName").lean() as any;
-        const target = await User.findById(targetUserId, "companyName").lean() as any;
-        if (admin?.companyName && target?.companyName && admin.companyName !== target.companyName) {
+        const [admin, target] = await Promise.all([
+          User.findById(decoded.userId, "companyName").lean(),
+          User.findById(targetUserId, "companyName").lean(),
+        ]);
+        const adminCompany = (admin as any)?.companyName;
+        const targetCompany = (target as any)?.companyName;
+        if (!adminCompany || adminCompany !== targetCompany) {
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
       }

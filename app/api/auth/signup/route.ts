@@ -25,15 +25,17 @@ export async function POST(request: Request) {
     }
 
     const { role, name, email, password, companyName, companyLogo, employeeId } = parsed.data;
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedCompany = companyName?.trim();
 
     await connectDB();
 
     if (role === "admin") {
-      if (!companyName) {
+      if (!trimmedCompany) {
         return NextResponse.json({ error: "Company name is required for admin signup" }, { status: 400 });
       }
 
-      const existing = await User.findOne({ email });
+      const existing = await User.findOne({ email: trimmedEmail });
       if (existing) {
         return NextResponse.json(
           { error: "A user with this email already exists." },
@@ -41,16 +43,16 @@ export async function POST(request: Request) {
         );
       }
 
-      const generatedId = await generateEmployeeId(companyName, name);
+      const generatedId = await generateEmployeeId(trimmedCompany, name);
       const passwordHash = await hashPassword(password);
 
       const user = await User.create({
         name,
         employeeId: generatedId,
-        email,
+        email: trimmedEmail,
         passwordHash,
         role: "admin",
-        companyName,
+        companyName: trimmedCompany,
         companyLogo,
         isVerified: true,
       });
@@ -84,14 +86,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "This employee account is already active. Please log in directly." }, { status: 400 });
       }
 
-      const existingEmail = await User.findOne({ email, employeeId: { $ne: employeeId } });
+      const existingEmail = await User.findOne({ email: trimmedEmail, employeeId: { $ne: employeeId } });
       if (existingEmail) {
         return NextResponse.json({ error: "This email is already taken by another user." }, { status: 409 });
       }
 
       const passwordHash = await hashPassword(password);
       user.name = name;
-      user.email = email;
+      user.email = trimmedEmail;
       user.passwordHash = passwordHash;
       user.isVerified = true;
       await user.save();

@@ -9,7 +9,7 @@ const EMPLOYEE_ONLY = ["/dashboard", "/payroll", "/attendance", "/leave"];
 // Routes that only admins can access (employees redirected to /dashboard)
 const ADMIN_ONLY = ["/admin"];
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Verify JWT from cookie

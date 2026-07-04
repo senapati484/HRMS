@@ -28,7 +28,8 @@ export default async function EmployeeDashboard() {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const companyFilter = user.companyName ? { companyName: user.companyName } : {};
+  if (!user.companyName) redirect("/login");
+  const companyFilter = { companyName: user.companyName };
 
   const [usersRaw, attendancesRaw, leavesRaw] = await Promise.all([
     User.find(companyFilter).sort({ name: 1 }).lean(),

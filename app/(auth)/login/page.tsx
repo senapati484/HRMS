@@ -3,15 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Users, Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Users, Lock, CheckCircle2, AlertCircle, ShieldAlert } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const [unverifiedId, setUnverifiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,9 +23,6 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 403 && data.userId) {
-          setUnverifiedId(data.userId);
-        }
         setError(data.error);
         return;
       }
@@ -35,19 +30,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleVerify() {
-    if (!unverifiedId) return;
-    setVerifying(true);
-    await fetch("/api/auth/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: unverifiedId }),
-    });
-    setVerifying(false);
-    setUnverifiedId(null);
-    setError("Email verified! You can now log in.");
   }
 
   return (
@@ -70,19 +52,18 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 rounded-lg text-sm font-semibold border flex flex-col gap-1"
               style={{
-                background: error.includes("verified") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
-                color: error.includes("verified") ? "var(--success)" : "var(--danger)",
-                borderColor: error.includes("verified") ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)",
+                background: "rgba(239,68,68,0.08)",
+                color: error.includes("verified") ? "var(--warning)" : "var(--danger)",
+                borderColor: error.includes("verified") ? "rgba(245,158,11,0.2)" : "rgba(239,68,68,0.2)",
               }}>
               <span className="flex items-center gap-1.5">
-                {error.includes("verified") ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {error.includes("verified") ? <ShieldAlert size={16} /> : <AlertCircle size={16} />}
                 {error}
               </span>
-              {unverifiedId && (
-                <button onClick={handleVerify} disabled={verifying}
-                  className="block mt-2 underline font-bold cursor-pointer text-left text-xs" style={{ color: "var(--warning)" }}>
-                  {verifying ? "Verifying..." : "Click here to verify email (demo) →"}
-                </button>
+              {error.includes("verify") && (
+                <span className="block mt-1 text-xs opacity-80">
+                  Contact your admin to activate your account.
+                </span>
               )}
             </div>
           )}

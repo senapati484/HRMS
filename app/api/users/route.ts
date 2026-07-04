@@ -66,7 +66,10 @@ export async function POST(request: Request) {
 
     // Find the admin's company details
     const adminUser = await User.findById(decoded.userId);
-    const companyName = adminUser?.companyName || "Acme Corp";
+    if (!adminUser?.companyName) {
+      return NextResponse.json({ error: "Admin has no company configured" }, { status: 403 });
+    }
+    const companyName = adminUser.companyName;
     const companyLogo = adminUser?.companyLogo;
 
     const parsedJoinDate = joinDate ? new Date(joinDate) : new Date();
