@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import LogoutButton from "@/components/LogoutButton";
 
 interface User {
   _id: string;
@@ -59,8 +57,8 @@ export default function AdminDashboard() {
       const dataEmp = await resEmp.json();
       if (dataEmp.users) setEmployees(dataEmp.users);
 
-      // 2. Fetch pending leaves
-      const resLeaves = await fetch("/api/leave");
+      // 2. Fetch ALL leaves (requires ?all=true for admin to see every employee's leaves)
+      const resLeaves = await fetch("/api/leave?all=true");
       const dataLeaves = await resLeaves.json();
       if (dataLeaves.leaves) setLeaves(dataLeaves.leaves);
 
@@ -156,30 +154,16 @@ export default function AdminDashboard() {
   const pendingLeaves = leaves.filter((l) => l.status === "Pending");
 
   return (
-    <div className="min-h-screen text-white" style={{ background: "var(--background)" }}>
-      {/* Header */}
-      <header
-        className="border-b px-6 py-4 flex items-center justify-between"
-        style={{ borderColor: "var(--card-border)", background: "var(--card)" }}
-      >
+    <div className="p-6 space-y-6 max-w-6xl mx-auto text-white">
+      {/* Page title */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-white">HR Admin Portal 🛡️</h1>
-          <p className="text-xs" style={{ color: "var(--muted)" }}>
-            Management, Policy Approval, and Anomaly Tracking
-          </p>
+          <h1 className="text-2xl font-bold text-white">HR Admin Portal 🛡️</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Manage employees, approve leaves, set payroll, and track anomalies</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span
-            className="text-xs px-3 py-1 rounded-full font-medium"
-            style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)" }}
-          >
-            Administrator
-          </span>
-          <LogoutButton />
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <span className="text-xs px-3 py-1.5 rounded-full font-medium" style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.2)" }}>Administrator</span>
+      </div>
+      <div>
         {/* Navigation Tabs */}
         <div className="flex gap-2 border-b" style={{ borderColor: "var(--card-border)" }}>
           {[
