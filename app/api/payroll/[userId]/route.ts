@@ -26,7 +26,10 @@ export async function GET(
     const payroll = (await Payroll.findOne({ userId }).populate("userId", "name employeeId").lean({ virtuals: true })) as any;
     if (!payroll) return NextResponse.json({ error: "Payroll not found" }, { status: 404 });
 
-    return NextResponse.json({ payroll });
+    // lean() drops Mongoose virtuals — compute net explicitly
+    const withNet = { ...payroll, net: (payroll.basic ?? 0) + (payroll.allowances ?? 0) - (payroll.deductions ?? 0) };
+
+    return NextResponse.json({ payroll: withNet });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
@@ -62,7 +65,12 @@ export async function PATCH(
       { new: true, upsert: true }
     ).lean({ virtuals: true })) as any;
 
-    return NextResponse.json({ payroll });
+    // lean() drops Mongoose virtuals — compute net explicitly
+    const withNet = payroll
+      ? { ...payroll, net: (payroll.basic ?? 0) + (payroll.allowances ?? 0) - (payroll.deductions ?? 0) }
+      : null;
+
+    return NextResponse.json({ payroll: withNet });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

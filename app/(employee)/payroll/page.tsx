@@ -57,15 +57,15 @@ export default function EmployeePayrollPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
                 <span style={{ color: "var(--muted)" }}>Basic Salary</span>
-                <span className="font-semibold text-white">₹{payroll.basic.toLocaleString("en-IN")}</span>
+                <span className="font-semibold text-white">₹{(payroll.basic ?? 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span style={{ color: "var(--muted)" }}>Allowances (HRA, LTA, etc.)</span>
-                <span className="font-semibold" style={{ color: "var(--success)" }}>+₹{payroll.allowances.toLocaleString("en-IN")}</span>
+                <span className="font-semibold" style={{ color: "var(--success)" }}>+₹{(payroll.allowances ?? 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span style={{ color: "var(--muted)" }}>Deductions (PF, Taxes, etc.)</span>
-                <span className="font-semibold" style={{ color: "var(--danger)" }}>-₹{payroll.deductions.toLocaleString("en-IN")}</span>
+                <span className="font-semibold" style={{ color: "var(--danger)" }}>-₹{(payroll.deductions ?? 0).toLocaleString("en-IN")}</span>
               </div>
               <div className="border-t pt-4 flex justify-between items-center" style={{ borderColor: "var(--card-border)" }}>
                 <span className="font-semibold text-white text-base">Net Take-Home Pay</span>
@@ -73,7 +73,7 @@ export default function EmployeePayrollPage() {
                   background: "linear-gradient(135deg, var(--primary), var(--accent))",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
-                }}>₹{payroll.net.toLocaleString("en-IN")}</span>
+                }}>₹{((payroll.net ?? (payroll.basic ?? 0) + (payroll.allowances ?? 0) - (payroll.deductions ?? 0))).toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
