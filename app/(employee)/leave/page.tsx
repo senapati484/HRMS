@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import CopilotAsk from "@/components/CopilotAsk";
 import { Sparkles, CheckCircle2, AlertCircle, Palmtree, ArrowRight } from "lucide-react";
 
 interface LeaveRequest {
@@ -282,11 +281,8 @@ export default function LeavePage() {
           </div>
         </div>
 
-        {/* Copilot Q&A + Leave history */}
+        {/* Leave history */}
         <div className="space-y-6">
-          <CopilotAsk />
-
-          {/* Leave history */}
           <div className="rounded-2xl border overflow-hidden glass-panel">
             <div
               className="px-5 py-4 border-b flex items-center gap-2"

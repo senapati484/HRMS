@@ -5,7 +5,6 @@ import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { Attendance } from "@/models/Attendance";
 import { Leave } from "@/models/Leave";
-import CopilotAsk from "@/components/CopilotAsk";
 import Link from "next/link";
 import { 
   Calendar, 
@@ -140,39 +139,32 @@ export default async function EmployeeDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent activity */}
-        <div className="rounded-2xl border p-6 glass-panel flex flex-col justify-between">
-          <div>
-            <h2 className="font-bold text-foreground mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
-              <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
-            </h2>
-            {activity.length === 0 ? (
-              <div className="text-center py-12 space-y-2">
-                <div className="text-3xl">📭</div>
-                <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
-                  No recent activity records.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {activity.map((item, i) => (
-                  <div key={i} className="flex items-center gap-4 text-sm py-3 border-b last:border-0 border-white/5">
-                    <div
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
-                    />
-                    <span className="text-foreground font-medium flex-1">{item.label}</span>
-                    <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* Recent activity */}
+      <div className="rounded-2xl border p-6 glass-panel">
+        <h2 className="font-bold text-foreground mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
+          <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
+        </h2>
+        {activity.length === 0 ? (
+          <div className="text-center py-12 space-y-2">
+            <div className="text-3xl">📭</div>
+            <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
+              No recent activity records.
+            </p>
           </div>
-        </div>
-
-        {/* AI Copilot Q&A */}
-        <CopilotAsk />
+        ) : (
+          <div className="space-y-4">
+            {activity.map((item, i) => (
+              <div key={i} className="flex items-center gap-4 text-sm py-3 border-b last:border-0 border-white/5">
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                />
+                <span className="text-foreground font-medium flex-1">{item.label}</span>
+                <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

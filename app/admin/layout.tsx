@@ -4,6 +4,7 @@ import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import Sidebar from "@/components/Sidebar";
+import CopilotAsk from "@/components/CopilotAsk";
 
 export default async function AdminLayout({
   children,
@@ -35,6 +36,7 @@ export default async function AdminLayout({
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <CopilotAsk />
     </div>
   );
 }
