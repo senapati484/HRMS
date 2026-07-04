@@ -13,6 +13,26 @@ export interface IUser extends Document {
   designation?: string;
   joinDate?: Date;
   isVerified: boolean;
+  companyName?: string;
+  companyLogo?: string;
+  about?: string;
+  jobLove?: string;
+  interests?: string;
+  skills?: string[];
+  certifications?: string[];
+  dob?: Date;
+  residingAddress?: string;
+  nationality?: string;
+  personalEmail?: string;
+  gender?: string;
+  maritalStatus?: string;
+  bankDetails?: {
+    accountNumber?: string;
+    bankName?: string;
+    ifscCode?: string;
+    pan?: string;
+    uan?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +51,26 @@ const UserSchema = new Schema<IUser>(
     designation: { type: String },
     joinDate: { type: Date },
     isVerified: { type: Boolean, default: false },
+    companyName: { type: String },
+    companyLogo: { type: String },
+    about: { type: String },
+    jobLove: { type: String },
+    interests: { type: String },
+    skills: { type: [String], default: [] },
+    certifications: { type: [String], default: [] },
+    dob: { type: Date },
+    residingAddress: { type: String },
+    nationality: { type: String },
+    personalEmail: { type: String },
+    gender: { type: String },
+    maritalStatus: { type: String },
+    bankDetails: {
+      accountNumber: { type: String },
+      bankName: { type: String },
+      ifscCode: { type: String },
+      pan: { type: String },
+      uan: { type: String },
+    },
   },
   { timestamps: true }
 );

@@ -38,6 +38,9 @@ export async function GET(
 import { z } from "zod";
 
 const payrollSchema = z.object({
+  monthlyWage: z.number().min(0).optional(),
+  workingDaysPerWeek: z.number().min(1).optional(),
+  breakTime: z.number().min(0).optional(),
   basic: z.number().min(0).optional(),
   allowances: z.number().min(0).optional(),
   deductions: z.number().min(0).optional(),
@@ -63,25 +66,29 @@ export async function PATCH(
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { basic, allowances, deductions } = parsed.data;
+    const updateData = parsed.data;
 
     await connectDB();
 
-    const payroll = (await Payroll.findOneAndUpdate(
-      { userId },
-      {
-        ...(basic !== undefined && { basic }),
-        ...(allowances !== undefined && { allowances }),
-        ...(deductions !== undefined && { deductions }),
-        updatedBy: decoded.userId,
-      },
-      { new: true, upsert: true }
-    ).lean({ virtuals: true })) as any;
+    // Use .findOne() and .save() to properly trigger Mongoose pre-save middleware calculations
+    let payroll = await Payroll.findOne({ userId });
+    if (!payroll) {
+      payroll = new Payroll({ userId });
+    }
 
-    // lean() drops Mongoose virtuals — compute net explicitly
-    const withNet = payroll
-      ? { ...payroll, net: (payroll.basic ?? 0) + (payroll.allowances ?? 0) - (payroll.deductions ?? 0) }
-      : null;
+    if (updateData.monthlyWage !== undefined) payroll.monthlyWage = updateData.monthlyWage;
+    if (updateData.workingDaysPerWeek !== undefined) payroll.workingDaysPerWeek = updateData.workingDaysPerWeek;
+    if (updateData.breakTime !== undefined) payroll.breakTime = updateData.breakTime;
+    
+    if (updateData.basic !== undefined) payroll.basic = updateData.basic;
+    if (updateData.allowances !== undefined) payroll.allowances = updateData.allowances;
+    if (updateData.deductions !== undefined) payroll.deductions = updateData.deductions;
+
+    payroll.updatedBy = decoded.userId;
+    await payroll.save();
+
+    // Convert to object and include virtuals (e.g. net take-home pay)
+    const withNet = payroll.toObject({ virtuals: true });
 
     return NextResponse.json({ payroll: withNet });
   } catch (error) {

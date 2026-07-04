@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Sparkles, CheckCircle2, AlertCircle, Palmtree, ArrowRight } from "lucide-react";
+import CopilotAsk from "@/components/CopilotAsk";
+import { Palmtree, Clock, Calendar, Check, X, FileText, CheckCircle2, Inbox } from "lucide-react";
 
 interface LeaveRequest {
   _id: string;
+  userId?: {
+    name: string;
+    employeeId: string;
+    department?: string;
+  };
   leaveType: string;
   startDate: string;
   endDate: string;
@@ -29,38 +35,21 @@ interface ParsedLeave {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; color: string; border: string }> = {
-    Pending: {
-      bg: "var(--warning-bg)",
-      color: "var(--warning)",
-      border: "var(--warning-border)",
-    },
-    Approved: {
-      bg: "var(--success-bg)",
-      color: "var(--success)",
-      border: "var(--success-border)",
-    },
-    Rejected: {
-      bg: "var(--danger-bg)",
-      color: "var(--danger)",
-      border: "var(--danger-border)",
-    },
+    Pending: { bg: "var(--warning-bg)", color: "var(--warning)", border: "var(--warning-border)" },
+    Approved: { bg: "var(--success-bg)", color: "var(--success)", border: "var(--success-border)" },
+    Rejected: { bg: "var(--danger-bg)", color: "var(--danger)", border: "var(--danger-border)" },
   };
-  const s = styles[status] || {
-    bg: "rgba(156,163,175,0.08)",
-    color: "var(--muted)",
-    border: "rgba(156,163,175,0.2)",
-  };
+  const s = styles[status] || { bg: "rgba(156,163,175,0.12)", color: "var(--muted)", border: "rgba(156,163,175,0.2)" };
   return (
-    <span
-      className="text-xs px-2.5 py-0.5 rounded-full font-bold border"
-      style={{ background: s.bg, color: s.color, borderColor: s.border }}
-    >
+    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold font-precise border uppercase tracking-wider"
+      style={{ background: s.bg, color: s.color, borderColor: s.border }}>
       {status}
     </span>
   );
 }
 
 export default function LeavePage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [form, setForm] = useState({ leaveType: "Paid", startDate: "", endDate: "", remarks: "" });
   const [nlInput, setNlInput] = useState("");
@@ -69,10 +58,34 @@ export default function LeavePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
 
+  // Admin decision states
+  const [hrComments, setHrComments] = useState<Record<string, string>>({});
+  const [decisionLoading, setDecisionLoading] = useState<string | null>(null);
+
+  const fetchUserData = async () => {
+    try {
+      const res = await fetch("/api/users/me");
+      const data = await res.json();
+      if (data.user) setCurrentUser(data.user);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const fetchLeaves = useCallback(async () => {
-    const res = await fetch("/api/leave");
-    const data = await res.json();
-    if (data.leaves) setLeaves(data.leaves);
+    if (!currentUser) return;
+    try {
+      const isSearchAdmin = currentUser.role === "admin";
+      const res = await fetch(`/api/leave?all=${isSearchAdmin}`);
+      const data = await res.json();
+      if (data.leaves) setLeaves(data.leaves);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    fetchUserData();
   }, []);
 
   useEffect(() => {
@@ -97,6 +110,8 @@ export default function LeavePage() {
         remarks: data.remarks || "",
       });
       setConfidence(data.confidence);
+    } catch (err) {
+      console.error(err);
     } finally {
       setNlLoading(false);
     }
@@ -114,7 +129,7 @@ export default function LeavePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitMsg(data.error || "Failed to submit request");
+        setSubmitMsg(data.error || "Failed to submit request.");
         return;
       }
       setSubmitMsg("✓ Leave request submitted successfully!");
@@ -122,8 +137,36 @@ export default function LeavePage() {
       setNlInput("");
       setConfidence(null);
       await fetchLeaves();
+    } catch (err) {
+      setSubmitMsg("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // Admin approval/rejection handler
+  async function handleDecision(leaveId: string, status: "Approved" | "Rejected") {
+    setDecisionLoading(leaveId);
+    try {
+      const hrComment = hrComments[leaveId] || "";
+      const res = await fetch(`/api/leave/${leaveId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, hrComment }),
+      });
+      if (res.ok) {
+        // Clear comment for this specific request
+        setHrComments(prev => {
+          const next = { ...prev };
+          delete next[leaveId];
+          return next;
+        });
+        await fetchLeaves();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDecisionLoading(null);
     }
   }
 
@@ -132,204 +175,278 @@ export default function LeavePage() {
     return confidence[field] ? "1px solid var(--success)" : "1px solid var(--warning)";
   };
 
+  if (!currentUser) {
+    return (
+      <div className="flex h-96 items-center justify-center text-sm text-white animate-pulse">
+        Loading time off panel...
+      </div>
+    );
+  }
+
+  const isAdmin = currentUser.role === "admin";
+
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto text-foreground">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto text-foreground">
+      {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Leave & Time-off</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-          Apply for leaves, view balances, and track approvals
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Time Off</h1>
+        <p className="text-xs" style={{ color: "var(--muted)" }}>
+          {isAdmin ? "Manage and decide on employee leave applications" : "Apply for time off and track your leave request statuses"}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Leave form */}
-        <div className="space-y-6">
-          {/* AI Smart Input */}
-          <div className="rounded-2xl p-5 glass-panel">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                <Sparkles size={14} />
-              </div>
-              <h3 className="font-bold text-foreground text-sm font-precise">Smart Request</h3>
+      {/* ADMIN VIEW: Leave Requests Table with quick Approve/Reject */}
+      {isAdmin ? (
+        <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="rounded-2xl border overflow-hidden glass-panel">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-xs min-w-[700px]">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.02)" }}>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px]">Employee</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px]">Leave Type</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px]">Duration</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px]">Reason</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px]">HR Note / Comment</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-[10px] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {leaves.map((l) => (
+                    <tr key={l._id} className="hover:bg-slate-100/5 dark:hover:bg-white/[0.01] transition-colors">
+                      <td className="p-4">
+                        <div className="font-bold text-foreground">{l.userId?.name || "Unknown User"}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>{l.userId?.employeeId}</div>
+                      </td>
+                      <td className="p-4 text-foreground font-semibold uppercase tracking-wider text-[10px]">{l.leaveType}</td>
+                      <td className="p-4 text-foreground">
+                        <div className="font-medium">
+                          {new Date(l.startDate).toLocaleDateString("en-IN")} – {new Date(l.endDate).toLocaleDateString("en-IN")}
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                          Applied: {new Date(l.createdAt).toLocaleDateString("en-IN")}
+                        </div>
+                      </td>
+                      <td className="p-4 text-foreground max-w-xs truncate" title={l.remarks}>{l.remarks || "—"}</td>
+                      <td className="p-4">
+                        {l.status === "Pending" ? (
+                          <input
+                            type="text"
+                            placeholder="Add rejection/approval note..."
+                            value={hrComments[l._id] || ""}
+                            onChange={(e) => setHrComments({ ...hrComments, [l._id]: e.target.value })}
+                            className="px-3 py-1.5 rounded-lg text-[11px] text-foreground outline-none border w-full min-w-[150px]"
+                            style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                          />
+                        ) : (
+                          <span className="italic text-muted">{l.hrComment || "—"}</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        {l.status === "Pending" ? (
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleDecision(l._id, "Approved")}
+                              disabled={decisionLoading === l._id}
+                              className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg cursor-pointer"
+                              title="Approve"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDecision(l._id, "Rejected")}
+                              disabled={decisionLoading === l._id}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer"
+                              title="Reject"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <StatusBadge status={l.status} />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
-              Type your request details below. AI will automatically fill the form fields.
-            </p>
-            <form onSubmit={handleNlParse} className="flex gap-2">
-              <input
-                value={nlInput}
-                onChange={(e) => setNlInput(e.target.value)}
-                placeholder='e.g. "2 days sick leave next Monday, I have a fever"'
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm text-foreground outline-none border transition-all"
-                style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
-              />
-              <button
-                type="submit"
-                disabled={nlLoading}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 cursor-pointer flex items-center gap-1.5"
-                style={{
-                  background: "linear-gradient(135deg, var(--primary), var(--accent))",
-                }}
-              >
-                {nlLoading ? "..." : "Parse"}
-              </button>
-            </form>
-            {confidence && (
-              <p className="text-[10px] mt-2 font-mono flex items-center gap-1" style={{ color: "var(--muted)" }}>
-                <CheckCircle2 size={12} className="text-emerald-400" /> Form pre-filled ·{" "}
-                <span className="text-amber-600 dark:text-amber-400 font-bold">Amber = Review before submitting</span>
-              </p>
-            )}
-          </div>
-
-          {/* Leave request form */}
-          <div className="rounded-2xl p-5 glass-panel">
-            <h3 className="font-bold text-foreground mb-4 text-sm tracking-wide font-precise">Apply for Leave</h3>
-            {submitMsg && (
-              <div
-                className="mb-4 p-3 rounded-lg text-sm font-semibold border flex items-center gap-2"
-                style={{
-                  background: submitMsg.startsWith("✓") ? "var(--success-bg)" : "var(--danger-bg)",
-                  color: submitMsg.startsWith("✓") ? "var(--success)" : "var(--danger)",
-                  borderColor: submitMsg.startsWith("✓") ? "var(--success-border)" : "var(--danger-border)",
-                }}
-              >
-                {submitMsg.startsWith("✓") ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                {submitMsg}
+            {leaves.length === 0 && (
+              <div className="text-center py-16 flex flex-col items-center justify-center">
+                <Inbox className="w-12 h-12 text-slate-500 mb-3" />
+                <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
+                  No leave requests submitted yet.
+                </p>
               </div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                  Leave Type
-                </label>
-                <select
-                  value={form.leaveType}
-                  onChange={(e) => setForm((f) => ({ ...f, leaveType: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none cursor-pointer border transition-all"
-                  style={{ background: "var(--background)", border: inputBorder("leaveType") }}
-                >
-                  <option value="Paid">Paid Leave</option>
-                  <option value="Sick">Sick Leave</option>
-                  <option value="Unpaid">Unpaid Leave</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={form.startDate}
-                    onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none border transition-all"
-                    style={{
-                      background: "var(--background)",
-                      border: inputBorder("startDate"),
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={form.endDate}
-                    onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none border transition-all"
-                    style={{
-                      background: "var(--background)",
-                      border: inputBorder("endDate"),
-                    }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                  Remarks
-                </label>
-                <textarea
-                  rows={3}
-                  value={form.remarks}
-                  onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none resize-none border transition-all"
-                  style={{ background: "var(--background)", border: inputBorder("remarks") }}
-                  placeholder="Reason for leave request..."
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-60 cursor-pointer transition-all hover:scale-[1.01]"
-                style={{
-                  background: "linear-gradient(135deg, var(--primary), var(--accent))",
-                }}
-              >
-                {submitting ? "Submitting..." : "Submit Leave Request"}
-              </button>
-            </form>
           </div>
         </div>
-
-        {/* Leave history */}
-        <div className="space-y-6">
-          <div className="rounded-2xl border overflow-hidden glass-panel">
-            <div
-              className="px-5 py-4 border-b flex items-center gap-2"
-              style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.01)" }}
-            >
-              <Palmtree size={16} className="text-indigo-400" />
-              <h3 className="font-bold text-foreground text-sm font-precise">My Leave History</h3>
+      ) : (
+        /* EMPLOYEE VIEW: Balance Allocation, Form, and Personal Requests Log */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+          
+          {/* Left panel: Leave submission forms */}
+          <div className="space-y-4">
+            {/* AI Copilot natural language box */}
+            <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">✨</span>
+                <h3 className="font-bold text-foreground text-sm">Describe leave in plain language</h3>
+              </div>
+              <form onSubmit={handleNlParse} className="flex gap-2">
+                <input
+                  value={nlInput}
+                  onChange={(e) => setNlInput(e.target.value)}
+                  placeholder='e.g. "I need 2 days off next Mon/Tue because I have fever"'
+                  className="flex-1 px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border"
+                  style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                />
+                <button
+                  type="submit"
+                  disabled={nlLoading}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white disabled:opacity-60 cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
+                >
+                  {nlLoading ? "Parsing..." : "Parse"}
+                </button>
+              </form>
+              {confidence && (
+                <p className="text-[10px] mt-2 flex items-center gap-1.5" style={{ color: "var(--muted)" }}>
+                  <CheckCircle2 size={12} className="text-green-500" /> Auto-filled fields. <span style={{ color: "var(--warning)" }}>Amber border = verify details.</span>
+                </p>
+              )}
             </div>
-            {leaves.length === 0 ? (
-              <p className="text-sm p-6 text-center" style={{ color: "var(--muted)" }}>
-                No leave requests logged yet.
-              </p>
-            ) : (
-              <div className="divide-y divide-black/5 dark:divide-white/5">
+
+            {/* Standard leave request form */}
+            <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
+              <h3 className="font-bold text-foreground mb-4 text-sm">Apply for Leave</h3>
+              {submitMsg && (
+                <div
+                  className="mb-4 p-3 rounded-lg text-xs font-semibold border flex items-center gap-2"
+                  style={{
+                    background: submitMsg.startsWith("✓") ? "var(--success-bg)" : "var(--danger-bg)",
+                    color: submitMsg.startsWith("✓") ? "var(--success)" : "var(--danger)",
+                    borderColor: submitMsg.startsWith("✓") ? "var(--success-border)" : "var(--danger-border)",
+                  }}
+                >
+                  {submitMsg.startsWith("✓") ? <CheckCircle2 size={14} /> : <Clock size={14} className="text-red-400" />}
+                  {submitMsg}
+                </div>
+              )}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>Leave Type</label>
+                  <select
+                    value={form.leaveType}
+                    onChange={(e) => setForm((f) => ({ ...f, leaveType: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border cursor-pointer"
+                    style={{ background: "var(--background)", border: inputBorder("leaveType") }}
+                  >
+                    <option value="Paid">Paid Leave</option>
+                    <option value="Sick">Sick Leave</option>
+                    <option value="Unpaid">Unpaid Leave</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={form.startDate}
+                      onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border"
+                      style={{ background: "var(--background)", border: inputBorder("startDate"), colorScheme: "dark" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={form.endDate}
+                      onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border"
+                      style={{ background: "var(--background)", border: inputBorder("endDate"), colorScheme: "dark" }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>Remarks</label>
+                  <textarea
+                    rows={3}
+                    value={form.remarks}
+                    onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border resize-none"
+                    style={{ background: "var(--background)", border: inputBorder("remarks") }}
+                    placeholder="Provide context / reason for leave request..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3 rounded-xl font-bold text-white text-xs disabled:opacity-60 transition-all cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
+                >
+                  {submitting ? "Submitting request..." : "Submit Leave Application"}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Right panel: Balance allocation card & personal log history */}
+          <div className="space-y-4">
+            {/* Allocation Balance Card */}
+            <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
+              <h3 className="font-bold text-foreground text-sm mb-4">Leave Allocations</h3>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {[
+                  { label: "Paid Leave", balance: "18 Days Left", color: "text-indigo-400" },
+                  { label: "Sick Leave", balance: "12 Days Left", color: "text-emerald-400" },
+                  { label: "Casual Leave", balance: "8 Days Left", color: "text-amber-400" },
+                ].map((alloc, idx) => (
+                  <div key={idx} className="p-3 bg-slate-500/5 rounded-xl border" style={{ borderColor: "var(--card-border)" }}>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-muted">{alloc.label}</div>
+                    <div className={`text-xs font-extrabold mt-2 ${alloc.color}`}>{alloc.balance}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Leave History List */}
+            <div className="rounded-2xl border overflow-hidden glass-panel" style={{ borderColor: "var(--card-border)" }}>
+              <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.01)" }}>
+                <Palmtree size={16} className="text-indigo-400" />
+                <h3 className="font-bold text-foreground text-sm">My Leave Requests</h3>
+              </div>
+              <div className="divide-y divide-black/5 dark:divide-white/5 max-h-[300px] overflow-y-auto">
                 {leaves.map((l) => (
-                  <div key={l._id} className="p-5 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                  <div key={l._id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between">
                       <div>
-                        <span className="text-sm font-bold text-foreground font-precise">
-                          {l.leaveType} Leave
-                        </span>
-                        <div className="text-xs mt-1 font-mono flex items-center gap-1.5" style={{ color: "var(--muted)" }}>
-                          <span>{new Date(l.startDate).toLocaleDateString("en-IN")}</span>
-                          <ArrowRight size={10} />
-                          <span>{new Date(l.endDate).toLocaleDateString("en-IN")}</span>
-                        </div>
+                        <span className="text-xs font-semibold text-foreground uppercase tracking-wider">{l.leaveType} Leave</span>
+                        <p className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                          {new Date(l.startDate).toLocaleDateString("en-IN")} – {new Date(l.endDate).toLocaleDateString("en-IN")}
+                        </p>
                       </div>
                       <StatusBadge status={l.status} />
                     </div>
-                    {l.remarks && (
-                      <p className="text-xs bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-white/5 text-foreground/80">
-                        {l.remarks}
-                      </p>
-                    )}
+                    {l.remarks && <p className="text-[11px]" style={{ color: "var(--muted)" }}>{l.remarks}</p>}
                     {l.hrComment && (
-                      <p
-                        className="text-xs mt-2 px-3 py-2 rounded-lg border"
-                        style={{
-                          background: "rgba(99,102,241,0.04)",
-                          borderColor: "rgba(99,102,241,0.15)",
-                          color: "var(--primary)",
-                        }}
-                      >
-                        <strong>HR Action Comment:</strong> {l.hrComment}
+                      <p className="text-[10px] p-2 bg-indigo-500/5 rounded-lg border border-indigo-500/10 text-indigo-400 font-medium">
+                        HR Note: {l.hrComment}
                       </p>
                     )}
                   </div>
                 ))}
+                {leaves.length === 0 && (
+                  <p className="text-xs p-5 text-center text-muted">No leave requests submitted yet.</p>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

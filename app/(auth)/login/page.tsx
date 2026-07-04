@@ -89,13 +89,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--muted)" }}>Email address</label>
+              <label className="block text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--muted)" }}>Login ID or Email</label>
               <input
-                type="email" required autoComplete="email"
+                type="text" required
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none border transition-all"
                 style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
-                placeholder="you@acme.in"
+                placeholder="you@acme.in or OITD..."
               />
             </div>
             <div>

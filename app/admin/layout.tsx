@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
 import CopilotAsk from "@/components/CopilotAsk";
 
 export default async function AdminLayout({
@@ -21,18 +21,9 @@ export default async function AdminLayout({
   const user = (await User.findById(decoded.userId, "-passwordHash").lean()) as any;
   if (!user) redirect("/login");
 
-  const sidebarUser = {
-    name: user.name,
-    employeeId: user.employeeId,
-    designation: user.designation,
-    department: user.department,
-    role: user.role,
-    profilePicture: user.profilePicture,
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
-      <Sidebar user={sidebarUser} />
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: "var(--background)" }}>
+      <Header />
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>

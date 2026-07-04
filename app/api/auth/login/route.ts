@@ -5,7 +5,7 @@ import { User } from "@/models/User";
 import { comparePassword, signToken } from "@/lib/auth";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1), // Accept email or Employee ID
   password: z.string().min(1),
 });
 
@@ -22,8 +22,13 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    // Generic error — never reveal whether email exists
-    const user = await User.findOne({ email });
+    // Query by email OR employeeId (case insensitive search via uppercase/lowercase)
+    const user = await User.findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { employeeId: email.toUpperCase() }
+      ]
+    });
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }

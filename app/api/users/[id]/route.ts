@@ -5,10 +5,15 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
 // Fields an employee is allowed to update on their own profile
-const EMPLOYEE_ALLOWED_FIELDS = ["phone", "address", "profilePicture"];
+const EMPLOYEE_ALLOWED_FIELDS = [
+  "phone", "address", "profilePicture",
+  "about", "jobLove", "interests", "skills", "certifications",
+  "dob", "residingAddress", "nationality", "personalEmail", "gender", "maritalStatus",
+  "bankDetails"
+];
 
 // Fields nobody should ever be able to set via PATCH
-const BLOCKED_FIELDS = ["passwordHash", "_id", "__v", "createdAt", "updatedAt"];
+const BLOCKED_FIELDS = ["passwordHash", "_id", "__v", "createdAt", "updatedAt", "employeeId"];
 
 export async function GET(
   _request: Request,
@@ -49,6 +54,24 @@ const userUpdateSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   profilePicture: z.string().url().or(z.literal("")).optional(),
+  about: z.string().optional(),
+  jobLove: z.string().optional(),
+  interests: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  certifications: z.array(z.string()).optional(),
+  dob: z.string().optional(),
+  residingAddress: z.string().optional(),
+  nationality: z.string().optional(),
+  personalEmail: z.string().optional(),
+  gender: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  bankDetails: z.object({
+    accountNumber: z.string().optional(),
+    bankName: z.string().optional(),
+    ifscCode: z.string().optional(),
+    pan: z.string().optional(),
+    uan: z.string().optional(),
+  }).optional(),
 });
 
 export async function PATCH(

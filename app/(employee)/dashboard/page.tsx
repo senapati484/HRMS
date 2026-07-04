@@ -5,17 +5,7 @@ import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { Attendance } from "@/models/Attendance";
 import { Leave } from "@/models/Leave";
-import Link from "next/link";
-import { 
-  Calendar, 
-  Palmtree, 
-  CircleDollarSign, 
-  User as UserIcon, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle2, 
-  TrendingUp 
-} from "lucide-react";
+import DashboardClient from "@/components/DashboardClient";
 
 export default async function EmployeeDashboard() {
   const cookieStore = await cookies();
@@ -29,143 +19,54 @@ export default async function EmployeeDashboard() {
   if (!user) redirect("/login");
 
   const today = new Date().toISOString().split("T")[0];
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
 
-  const [recentAttendance, recentLeaves, todayAttendance] = await Promise.all([
-    (await Attendance.find({ userId: decoded.userId }).sort({ date: -1 }).limit(5).lean()) as any[],
-    (await Leave.find({ userId: decoded.userId }).sort({ createdAt: -1 }).limit(5).lean()) as any[],
-    (await Attendance.findOne({ userId: decoded.userId, date: today }).lean()) as any,
+  // Fetch all users, today's attendance status, and approved leaves for today
+  const [usersRaw, attendancesRaw, leavesRaw] = await Promise.all([
+    User.find({}).sort({ name: 1 }).lean(),
+    Attendance.find({ date: today }).lean(),
+    Leave.find({
+      status: "Approved",
+      startDate: { $lte: todayEnd },
+      endDate: { $gte: todayStart }
+    }).lean()
   ]);
 
-  const activity = [
-    ...recentAttendance.map((a: any) => ({
-      type: "attendance" as const,
-      label: `Attendance: ${a.status}`,
-      date: a.date,
-      color:
-        a.status === "Present"
-          ? "var(--success)"
-          : a.status === "HalfDay"
-          ? "var(--warning)"
-          : "var(--danger)",
-    })),
-    ...recentLeaves.map((l: any) => ({
-      type: "leave" as const,
-      label: `${l.leaveType} Leave Request: ${l.status}`,
-      date: new Date(l.startDate).toISOString().split("T")[0],
-      color:
-        l.status === "Approved"
-          ? "var(--success)"
-          : l.status === "Rejected"
-          ? "var(--danger)"
-          : "var(--warning)",
-    })),
-  ]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 5);
+  const employeesMapped = usersRaw.map((u: any) => {
+    const att = attendancesRaw.find((a: any) => a.userId.toString() === u._id.toString());
+    const leave = leavesRaw.find((l: any) => l.userId.toString() === u._id.toString());
 
-  const quickLinks = [
-    { href: "/attendance", label: "Attendance", icon: Calendar, desc: "Check in / Check out" },
-    { href: "/leave", label: "Leave", icon: Palmtree, desc: "Apply for time off" },
-    { href: "/payroll", label: "Payroll", icon: CircleDollarSign, desc: "View your salary" },
-    { href: "/profile", label: "Profile", icon: UserIcon, desc: "View & edit your info" },
-  ];
+    let status: "Present" | "Leave" | "Absent" = "Absent";
+    if (leave) {
+      status = "Leave";
+    } else if (att && att.checkIn && !att.checkOut) {
+      status = "Present";
+    }
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    return {
+      ...u,
+      _id: u._id.toString(),
+      joinDate: u.joinDate ? u.joinDate.toISOString() : undefined,
+      dob: u.dob ? u.dob.toISOString() : undefined,
+      status,
+      attendanceToday: att ? {
+        checkIn: att.checkIn ? att.checkIn.toISOString() : undefined,
+        checkOut: att.checkOut ? att.checkOut.toISOString() : undefined,
+      } : undefined
+    };
+  });
+
+  const currentUserSerialized = {
+    ...user,
+    _id: user._id.toString(),
+    joinDate: user.joinDate ? user.joinDate.toISOString() : undefined,
+    dob: user.dob ? user.dob.toISOString() : undefined,
+  };
 
   return (
-    <div className="p-6 space-y-8 max-w-6xl mx-auto text-foreground">
-      {/* Welcome banner */}
-      <div
-        className="rounded-2xl p-6 border flex items-center justify-between glass-panel relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.06))",
-          borderColor: "rgba(99,102,241,0.15)",
-        }}
-      >
-        <div className="space-y-1 z-10">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            {greeting}, {user.name.split(" ")[0]} 👋
-          </h1>
-          <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
-            {user.designation} · {user.department} ·{" "}
-            <span className="font-mono text-xs opacity-75">{user.employeeId}</span>
-          </p>
-        </div>
-        <div className="text-right hidden sm:block font-precise z-10">
-          <p className="text-sm font-semibold text-foreground">
-            {new Date().toLocaleDateString("en-IN", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-          {todayAttendance ? (
-            <p className="text-xs mt-1.5 flex items-center gap-1.5 justify-end" style={{ color: "var(--success)" }}>
-              <CheckCircle2 size={14} /> Checked {todayAttendance.checkOut ? "out" : "in"} today
-            </p>
-          ) : (
-            <p className="text-xs mt-1.5 flex items-center gap-1.5 justify-end" style={{ color: "var(--warning)" }}>
-              <Clock size={14} /> Not checked in yet
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Quick access */}
-      <div>
-        <h2 className="text-[10px] font-bold mb-4 tracking-widest uppercase font-precise" style={{ color: "var(--muted)", opacity: 0.6 }}>
-          Quick Action Portal
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {quickLinks.map(({ href, label, icon: Icon, desc }) => (
-            <Link
-              key={href}
-              href={href}
-              className="rounded-2xl p-5 border transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-950/10 block group cursor-pointer glass-panel"
-            >
-              <div className="text-indigo-400 mb-3 group-hover:text-indigo-300 transition-colors">
-                <Icon size={24} />
-              </div>
-              <div className="font-bold text-foreground text-sm group-hover:text-indigo-300 transition-colors font-precise">
-                {label}
-              </div>
-              <div className="text-xs mt-1.5" style={{ color: "var(--muted)" }}>
-                {desc}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent activity */}
-      <div className="rounded-2xl border p-6 glass-panel">
-        <h2 className="font-bold text-foreground mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
-          <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
-        </h2>
-        {activity.length === 0 ? (
-          <div className="text-center py-12 space-y-2">
-            <div className="text-3xl">📭</div>
-            <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
-              No recent activity records.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {activity.map((item, i) => (
-              <div key={i} className="flex items-center gap-4 text-sm py-3 border-b last:border-0 border-white/5">
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
-                />
-                <span className="text-foreground font-medium flex-1">{item.label}</span>
-                <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardClient currentUser={currentUserSerialized} initialEmployees={employeesMapped} />
   );
 }
