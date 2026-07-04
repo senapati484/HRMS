@@ -70,8 +70,9 @@ export default function AttendancePage() {
     }
   }, [currentUser, selectedDate, currentMonth]);
 
+  // Always re-fetch to match current session
   useEffect(() => {
-    if (!currentUser) fetchUser();
+    fetchUser();
   }, []);
 
   useEffect(() => {

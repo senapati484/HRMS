@@ -30,9 +30,9 @@ export default function Header() {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch current user once and cache in store
+  // Fetch current user on every mount to sync with current session
   useEffect(() => {
-    if (!user) fetchUser();
+    fetchUser();
 
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) {

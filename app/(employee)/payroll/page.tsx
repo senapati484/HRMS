@@ -24,20 +24,20 @@ export default function EmployeePayrollPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Always re-fetch to match current session
   useEffect(() => {
-    if (!cachedUser) {
-      fetchUser();
-      return;
-    }
-    fetch(`/api/payroll/${cachedUser._id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setError(data.error);
-        else if (data.payroll) setPayroll(data.payroll);
-      })
-      .catch((err) => setError(err.message || "Failed to load payroll details"))
-      .finally(() => setLoading(false));
-  }, [cachedUser]);
+    fetchUser().then((user) => {
+      if (!user) return;
+      fetch(`/api/payroll/${user._id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.error) setError(data.error);
+          else if (data.payroll) setPayroll(data.payroll);
+        })
+        .catch((err) => setError(err.message || "Failed to load payroll details"))
+        .finally(() => setLoading(false));
+    });
+  }, []);
 
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">

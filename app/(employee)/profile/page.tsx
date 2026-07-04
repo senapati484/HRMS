@@ -76,22 +76,21 @@ export default function ProfilePage() {
   const [passMsg, setPassMsg] = useState("");
   const [passLoading, setPassLoading] = useState(false);
 
-  // Sync from cached store once
+  // Sync from store on mount — always re-fetch to match current session
   useEffect(() => {
-    if (cachedUser && !currentUser) {
-      setCurrentUser(cachedUser as User);
-      setEditForm(JSON.parse(JSON.stringify(cachedUser)));
-      fetch(`/api/payroll/${cachedUser._id}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.payroll) setSalaryInfo(data.payroll);
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    } else if (!cachedUser) {
-      fetchUser();
-    }
-  }, [cachedUser]);
+    fetchUser().then((user) => {
+      if (user && !currentUser) {
+        setCurrentUser(user as User);
+        setEditForm(JSON.parse(JSON.stringify(user)));
+        return fetch(`/api/payroll/${user._id}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.payroll) setSalaryInfo(data.payroll);
+          })
+          .catch(() => {});
+      }
+    }).finally(() => setLoading(false));
+  }, []);
 
   // Keep editForm synced with currentUser changes from profile saves
   useEffect(() => {
