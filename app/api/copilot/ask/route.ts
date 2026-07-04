@@ -11,8 +11,10 @@ import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+function getAI() {
+  if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+}
 
 export async function POST(request: Request) {
   try {
@@ -118,8 +120,10 @@ export async function POST(request: Request) {
       reason: l.remarks || "",
     }));
 
+    const companyName = user?.companyName ?? "Acme Corp";
+
     // ── Build system prompt with ALL real data ────────────────────────────
-    const systemPrompt = `You are a friendly, knowledgeable HR assistant for Acme Corp. You have REAL-TIME access to this employee's HR data fetched directly from the database right now. Use it to answer accurately and helpfully.
+    const systemPrompt = `You are a friendly, knowledgeable HR assistant for ${companyName}. You have REAL-TIME access to this employee's HR data fetched directly from the database right now. Use it to answer accurately and helpfully.
 
 TODAY: ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
 
@@ -184,7 +188,7 @@ ${policy.rules.map((r: string, i: number) => `${i + 1}. ${r}`).join("\n")}
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const responseStream = await ai.models.generateContentStream({
+          const responseStream = await getAI().models.generateContentStream({
             model: "gemini-2.5-flash",
             contents: `${systemPrompt}\n\n---\nEMPLOYEE QUESTION: ${question}`,
           });

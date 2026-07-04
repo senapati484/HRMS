@@ -40,7 +40,7 @@ export async function GET(
       ]);
       const adminCompany = (admin as any)?.companyName;
       const targetCompany = (target as any)?.companyName;
-      if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+      if (!adminCompany || adminCompany !== targetCompany) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
@@ -124,7 +124,7 @@ export async function PATCH(
       ]);
       const adminCompany = (admin as any)?.companyName;
       const targetCompany = (target as any)?.companyName;
-      if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+      if (!adminCompany || adminCompany !== targetCompany) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }

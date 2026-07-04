@@ -22,9 +22,8 @@ export async function GET() {
     await connectDB();
     const admin = await User.findById(decoded.userId, "companyName").lean() as any;
     const companyName = admin?.companyName;
-    const filter: Record<string, any> = {};
-    if (companyName) filter.companyName = companyName;
-    const users = (await User.find(filter, "-passwordHash").sort({ createdAt: -1 }).lean()) as any[];
+    if (!companyName) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const users = (await User.find({ companyName }, "-passwordHash").sort({ createdAt: -1 }).lean()) as any[];
     return NextResponse.json({ users });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
@@ -74,7 +73,8 @@ export async function POST(request: Request) {
     const employeeId = await generateEmployeeId(companyName, name, parsedJoinDate);
 
     // Auto-generated temporary password
-    const tempPassword = "Password123!";
+    const { randomBytes } = await import("crypto");
+    const tempPassword = randomBytes(12).toString("hex");
     const passwordHash = await hashPassword(tempPassword);
 
     const user = await User.create({

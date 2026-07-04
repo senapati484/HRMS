@@ -21,19 +21,18 @@ export async function GET() {
 
     const adminUser = await User.findById(decoded.userId, "companyName").lean() as any;
     const companyName = adminUser?.companyName;
+    if (!companyName) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const flags: Array<{ type: string; employeeName: string; detail: string; refId?: string }> = [];
 
     // Rule 1: Pending leave requests older than 48 hours
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
     const staleQuery: Record<string, any> = {
       status: "Pending",
       createdAt: { $lt: fortyEightHoursAgo },
+      userId: { $in: companyUserIds },
     };
-    if (companyName) {
-      const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
-      staleQuery.userId = { $in: companyUserIds };
-    }
     const stalePending = (await Leave.find(staleQuery).populate("userId", "name").lean()) as any[];
 
     for (const leave of stalePending) {
@@ -52,18 +51,23 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
-    const employeeFilter: Record<string, any> = { role: "employee" };
-    if (companyName) employeeFilter.companyName = companyName;
-    const employees = (await User.find(employeeFilter, "_id name").lean()) as any[];
+    const employees = (await User.find({ role: "employee", companyName }, "_id name").lean()) as any[];
+    const employeeIds = employees.map(e => e._id);
 
+    const absenceAgg = await Attendance.aggregate([
+      { $match: { userId: { $in: employeeIds }, date: { $gte: startOfMonth, $lte: endOfMonth }, status: "Absent" } },
+      { $group: { _id: "$userId", count: { $sum: 1 } } },
+    ]) as Array<{ _id: any; count: number }>;
+
+    const empMap = Object.fromEntries(employees.map(e => [e._id.toString(), e.name]));
     const absenceCounts: Record<string, { name: string; count: number }> = {};
+    for (const row of absenceAgg) {
+      const id = row._id.toString();
+      absenceCounts[id] = { name: empMap[id] ?? "Unknown", count: row.count };
+    }
     for (const emp of employees) {
-      const absences = await Attendance.countDocuments({
-        userId: emp._id,
-        date: { $gte: startOfMonth, $lte: endOfMonth },
-        status: "Absent",
-      });
-      absenceCounts[emp._id.toString()] = { name: emp.name, count: absences };
+      const id = emp._id.toString();
+      if (!absenceCounts[id]) absenceCounts[id] = { name: emp.name, count: 0 };
     }
 
     const ABSENCE_THRESHOLD = 3;

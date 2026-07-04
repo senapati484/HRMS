@@ -42,9 +42,6 @@ const payrollSchema = z.object({
   monthlyWage: z.number().min(0).optional(),
   workingDaysPerWeek: z.number().min(1).optional(),
   breakTime: z.number().min(0).optional(),
-  basic: z.number().min(0).optional(),
-  allowances: z.number().min(0).optional(),
-  deductions: z.number().min(0).optional(),
   bonus: z.number().min(0).optional(),
   payCycle: z.enum(["monthly", "bi-weekly", "weekly"]).optional(),
   currency: z.string().optional(),
@@ -83,7 +80,7 @@ export async function PATCH(
     ]);
     const adminCompany = (admin as any)?.companyName;
     const targetCompany = (target as any)?.companyName;
-    if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+    if (!adminCompany || adminCompany !== targetCompany) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -96,10 +93,6 @@ export async function PATCH(
     if (updateData.monthlyWage !== undefined) payroll.monthlyWage = updateData.monthlyWage;
     if (updateData.workingDaysPerWeek !== undefined) payroll.workingDaysPerWeek = updateData.workingDaysPerWeek;
     if (updateData.breakTime !== undefined) payroll.breakTime = updateData.breakTime;
-    
-    if (updateData.basic !== undefined) payroll.basic = updateData.basic;
-    if (updateData.allowances !== undefined) payroll.allowances = updateData.allowances;
-    if (updateData.deductions !== undefined) payroll.deductions = updateData.deductions;
     if (updateData.bonus !== undefined) payroll.bonus = updateData.bonus;
     if (updateData.payCycle !== undefined) payroll.payCycle = updateData.payCycle;
     if (updateData.currency !== undefined) payroll.currency = updateData.currency;

@@ -36,6 +36,7 @@ export async function generateEmployeeId(
   const endOfYear = new Date(joinDate.getFullYear(), 11, 31, 23, 59, 59);
 
   const count = await User.countDocuments({
+    companyName,
     createdAt: { $gte: startOfYear, $lte: endOfYear }
   });
   

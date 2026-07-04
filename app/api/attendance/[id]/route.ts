@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import { Attendance } from "@/models/Attendance";
 import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+
+const patchSchema = z.object({
+  checkIn: z.string().optional(),
+  checkOut: z.string().optional(),
+  status: z.enum(["Present", "Absent", "HalfDay"]).optional(),
+  date: z.string().optional(),
+});
 
 export async function PATCH(
   request: Request,
@@ -20,6 +28,11 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const parsed = patchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
     await connectDB();
 
     const existing = await Attendance.findById(id).lean() as any;
@@ -31,11 +44,11 @@ export async function PATCH(
     ]);
     const adminCompany = (admin as any)?.companyName;
     const targetCompany = (target as any)?.companyName;
-    if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+    if ((adminCompany && targetCompany && adminCompany !== targetCompany) || !adminCompany) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const record = await Attendance.findByIdAndUpdate(id, body, { new: true });
+    const record = await Attendance.findByIdAndUpdate(id, parsed.data, { new: true });
     return NextResponse.json({ attendance: record });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

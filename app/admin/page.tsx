@@ -65,6 +65,7 @@ function AdminDashboard() {
   const anomalies = useDataStore((s) => s._anomalies?.data ?? EMPTY) as Anomaly[];
   const fetchAdminAll = useDataStore((s) => s.fetchAdminAll);
   const invalidateLeaves = useDataStore((s) => s.invalidateLeaves);
+  const invalidateEmployees = useDataStore((s) => s.invalidateEmployees);
 
   const [activeTab, setActiveTabState] = useState<"dashboard" | "employees" | "leaves" | "anomalies" | "payroll">("dashboard");
 

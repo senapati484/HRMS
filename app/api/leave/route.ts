@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { sendNewLeaveNotification } from "@/lib/email";
+import policy from "@/lib/policy.json";
 
 const leaveSchema = z.object({
   leaveType: z.enum(["Paid", "Sick", "Unpaid"]),
@@ -33,10 +34,9 @@ export async function GET(request: Request) {
     } else {
       const admin = await User.findById(decoded.userId, "companyName").lean() as any;
       const companyName = admin?.companyName;
-      if (companyName) {
-        const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
-        query.userId = { $in: companyUserIds };
-      }
+      if (!companyName) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
+      query.userId = { $in: companyUserIds };
     }
     if (status) query.status = status;
 
@@ -76,7 +76,53 @@ export async function POST(request: Request) {
       );
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (start < today) {
+      return NextResponse.json(
+        { error: "startDate cannot be in the past" },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
+
+    // Check for overlapping leaves
+    const overlapping = await Leave.findOne({
+      userId: decoded.userId,
+      status: { $ne: "Rejected" },
+      startDate: { $lte: end },
+      endDate: { $gte: start },
+    });
+    if (overlapping) {
+      return NextResponse.json(
+        { error: "You already have a leave request overlapping these dates" },
+        { status: 409 }
+      );
+    }
+
+    // Check leave balance
+    const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(`${currentYear}-01-01`);
+    const endOfYear = new Date(`${currentYear}-12-31`);
+    const approvedThisYear = await Leave.find({
+      userId: decoded.userId,
+      status: "Approved",
+      leaveType,
+      startDate: { $gte: startOfYear, $lte: endOfYear },
+    });
+    const daysUsed = approvedThisYear.reduce((sum, l) => {
+      const days = Math.ceil((l.endDate.getTime() - l.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      return sum + days;
+    }, 0);
+    const requestedDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const policyLimit = leaveType === "Paid" ? policy.annual_paid_leave : leaveType === "Sick" ? policy.annual_sick_leave : policy.annual_unpaid_leave;
+    if (daysUsed + requestedDays > policyLimit) {
+      return NextResponse.json(
+        { error: `Insufficient ${leaveType} leave balance. Used ${daysUsed} of ${policyLimit}, requesting ${requestedDays}.` },
+        { status: 400 }
+      );
+    }
 
     const leave = await Leave.create({
       userId: decoded.userId,

@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { sendLeaveStatusNotification } from "@/lib/email";
+import policy from "@/lib/policy.json";
 
 const decisionSchema = z.object({
   status: z.enum(["Approved", "Rejected"]),
@@ -43,8 +44,37 @@ export async function PATCH(
     ]);
     const adminCompany = (admin as any)?.companyName;
     const targetCompany = (target as any)?.companyName;
-    if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+    if (!adminCompany || adminCompany !== targetCompany) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (parsed.data.status === "Approved") {
+      const leaveType = existing.leaveType;
+      const start = new Date(existing.startDate);
+      const end = new Date(existing.endDate);
+      const requestedDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      const currentYear = new Date().getFullYear();
+      const startOfYear = new Date(`${currentYear}-01-01`);
+      const endOfYear = new Date(`${currentYear}-12-31`);
+      const approvedThisYear = await Leave.find({
+        userId: existing.userId,
+        _id: { $ne: id },
+        status: "Approved",
+        leaveType,
+        startDate: { $gte: startOfYear, $lte: endOfYear },
+      });
+      const daysUsed = approvedThisYear.reduce((sum, l) => {
+        const d = Math.ceil((l.endDate.getTime() - l.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return sum + d;
+      }, 0);
+      const policyLimit = leaveType === "Paid" ? policy.annual_paid_leave : leaveType === "Sick" ? policy.annual_sick_leave : policy.annual_unpaid_leave;
+      if (daysUsed + requestedDays > policyLimit) {
+        return NextResponse.json(
+          { error: `Insufficient ${leaveType} leave balance. Used ${daysUsed} of ${policyLimit}, approving would add ${requestedDays}.` },
+          { status: 400 }
+        );
+      }
     }
 
     const leave = await Leave.findByIdAndUpdate(

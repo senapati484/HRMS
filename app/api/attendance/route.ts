@@ -45,10 +45,9 @@ export async function GET(request: Request) {
     } else {
       const admin = await User.findById(decoded.userId, "companyName").lean() as any;
       const companyName = admin?.companyName;
-      if (companyName) {
-        const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
-        query.userId = { $in: companyUserIds };
-      }
+      if (!companyName) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
+      query.userId = { $in: companyUserIds };
     }
 
     if (from || to) {
@@ -73,7 +72,7 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const token = cookieStore.get("hrms_token")?.value;
     const decoded = token ? verifyToken(token) : null;
-    if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!decoded || decoded.role !== "employee") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await connectDB();
 
