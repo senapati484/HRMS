@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, MessageSquare, StopCircle, RefreshCw, Send } from "lucide-react";
+import { Sparkles, MessageSquare, StopCircle, RefreshCw, Send, Trash2 } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -32,14 +32,14 @@ function MarkdownRenderer({ text }: { text: string }) {
         // 1. Headings
         if (cleanLine.startsWith("### ")) {
           return (
-            <h4 key={idx} className="text-sm font-bold text-white mt-3 mb-1 font-precise">
+            <h4 key={idx} className="text-sm font-bold text-foreground mt-3 mb-1 font-precise">
               {cleanLine.replace("### ", "")}
             </h4>
           );
         }
         if (cleanLine.startsWith("## ")) {
           return (
-            <h3 key={idx} className="text-sm font-extrabold text-white mt-4 mb-2 border-b border-white/5 pb-1 font-precise">
+            <h3 key={idx} className="text-sm font-extrabold text-foreground mt-4 mb-2 border-b border-black/5 dark:border-white/5 pb-1 font-precise">
               {cleanLine.replace("## ", "")}
             </h3>
           );
@@ -48,15 +48,15 @@ function MarkdownRenderer({ text }: { text: string }) {
           const content = cleanLine.replace(/^[•*]\s+/, "");
           return (
             <div key={idx} className="flex gap-2 text-sm pl-2">
-              <span className="text-indigo-400">•</span>
-              <span className="flex-1">{formatBoldItalic(content)}</span>
+              <span className="text-indigo-400 font-bold">•</span>
+              <span className="flex-1 text-foreground/90">{formatBoldItalic(content)}</span>
             </div>
           );
         }
 
         // Default paragraph
         if (cleanLine === "") return <div key={idx} className="h-1" />;
-        return <p key={idx} className="text-sm">{formatBoldItalic(cleanLine)}</p>;
+        return <p key={idx} className="text-sm text-foreground/90">{formatBoldItalic(cleanLine)}</p>;
       })}
     </div>
   );
@@ -68,14 +68,14 @@ function formatBoldItalic(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-bold text-white">
+        <strong key={i} className="font-bold text-foreground">
           {part.slice(2, -2)}
         </strong>
       );
     }
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="px-1.5 py-0.5 rounded text-xs bg-slate-950/80 font-mono text-indigo-300 border border-white/5">
+        <code key={i} className="px-1.5 py-0.5 rounded text-xs bg-slate-100 dark:bg-slate-950 font-mono text-indigo-600 dark:text-indigo-300 border border-slate-200 dark:border-white/5">
           {part.slice(1, -1)}
         </code>
       );
@@ -206,7 +206,7 @@ export default function CopilotAsk() {
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0 shadow-sm"
             style={{
               background: "linear-gradient(135deg, var(--primary), var(--accent))",
             }}
@@ -214,10 +214,10 @@ export default function CopilotAsk() {
             <Sparkles size={16} />
           </div>
           <div>
-            <h2 className="font-bold text-white text-sm leading-tight font-precise">HR Copilot</h2>
+            <h2 className="font-bold text-foreground text-sm leading-tight font-precise">HR Copilot</h2>
             <p className="text-xs leading-tight mt-0.5" style={{ color: "var(--muted)" }}>
               {streaming ? (
-                <span className="flex items-center gap-1.5 text-indigo-400">
+                <span className="flex items-center gap-1.5 text-indigo-400 font-bold">
                   <RefreshCw size={10} className="animate-spin" />
                   AI is typing...
                 </span>
@@ -230,10 +230,10 @@ export default function CopilotAsk() {
         {messages.length > 0 && (
           <button
             onClick={clearChat}
-            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-colors hover:bg-white/10 cursor-pointer font-precise"
-            style={{ color: "var(--muted)", background: "rgba(255,255,255,0.04)" }}
+            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-colors hover:bg-slate-500/10 cursor-pointer font-precise flex items-center gap-1 border"
+            style={{ color: "var(--danger)", borderColor: "rgba(239, 68, 68, 0.2)", background: "rgba(239, 68, 68, 0.05)" }}
           >
-            Clear
+            <Trash2 size={10} /> Clear
           </button>
         )}
       </div>
@@ -243,12 +243,12 @@ export default function CopilotAsk() {
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-indigo-400 mb-3"
-              style={{ background: "rgba(99,102,241,0.1)" }}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-indigo-400 mb-3 shadow-inner"
+              style={{ background: "rgba(99,102,241,0.08)" }}
             >
               <MessageSquare size={24} />
             </div>
-            <p className="text-sm font-bold text-white mb-1 font-precise">AI HR Copilot Assistant</p>
+            <p className="text-sm font-bold text-foreground mb-1 font-precise">AI HR Copilot Assistant</p>
             <p className="text-xs mb-5 max-w-[280px]" style={{ color: "var(--muted)" }}>
               I have live database access to your profile, attendance history, payroll, and leave limits.
             </p>
@@ -257,11 +257,11 @@ export default function CopilotAsk() {
                 <button
                   key={s}
                   onClick={() => ask(s)}
-                  className="text-xs px-3 py-1.5 rounded-full transition-all hover:bg-indigo-500/20 cursor-pointer"
+                  className="text-xs px-3.5 py-1.5 rounded-full transition-all hover:scale-[1.02] hover:bg-indigo-500/15 cursor-pointer font-semibold border"
                   style={{
-                    background: "rgba(99,102,241,0.08)",
+                    background: "rgba(99,102,241,0.06)",
                     color: "var(--primary)",
-                    border: "1px solid rgba(99,102,241,0.15)",
+                    borderColor: "rgba(99,102,241,0.15)",
                   }}
                 >
                   {s}
@@ -278,39 +278,40 @@ export default function CopilotAsk() {
               >
                 {msg.role === "assistant" && (
                   <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center text-indigo-300 flex-shrink-0 mt-1 mr-2"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center text-indigo-500 dark:text-indigo-300 flex-shrink-0 mt-1 mr-2 border border-indigo-500/10"
                     style={{
-                      background: "rgba(99,102,241,0.15)",
+                      background: "rgba(99,102,241,0.08)",
                     }}
                   >
                     <Sparkles size={12} />
                   </div>
                 )}
                 <div
-                  className="max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed"
+                  className="max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed border shadow-sm"
                   style={
                     msg.role === "user"
                       ? {
                           background: "linear-gradient(135deg, var(--primary), var(--accent))",
                           color: "white",
+                          borderColor: "rgba(99,102,241,0.2)",
                           borderBottomRightRadius: "4px",
                         }
                       : {
-                          background: "rgba(255,255,255,0.03)",
+                          background: "var(--background)",
                           color: "var(--foreground)",
-                          border: "1px solid rgba(255,255,255,0.06)",
+                          borderColor: "var(--card-border)",
                           borderBottomLeftRadius: "4px",
                         }
                   }
                 >
                   {msg.role === "user" ? (
-                    <span className="white-space-pre-wrap">{msg.content}</span>
+                    <span className="white-space-pre-wrap font-medium">{msg.content}</span>
                   ) : (
                     <MarkdownRenderer text={msg.content} />
                   )}
                   {msg.streaming && (
                     <span
-                      className="inline-block w-1.5 h-3 ml-1 animate-pulse bg-indigo-400"
+                      className="inline-block w-1.5 h-3 ml-1 animate-pulse bg-indigo-500 dark:bg-indigo-400"
                       style={{ verticalAlign: "baseline" }}
                     />
                   )}
@@ -332,11 +333,11 @@ export default function CopilotAsk() {
             <button
               key={s}
               onClick={() => ask(s)}
-              className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 transition-all hover:bg-white/5 cursor-pointer"
+              className="text-xs px-3 py-1 rounded-full whitespace-nowrap flex-shrink-0 transition-all hover:bg-slate-500/10 cursor-pointer font-semibold border"
               style={{
-                background: "rgba(99,102,241,0.08)",
-                color: "var(--muted)",
-                border: "1px solid rgba(99,102,241,0.15)",
+                background: "rgba(99,102,241,0.06)",
+                color: "var(--primary)",
+                borderColor: "rgba(99,102,241,0.15)",
               }}
             >
               {s}
@@ -357,21 +358,21 @@ export default function CopilotAsk() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about leaves, payroll, attendance..."
             disabled={streaming}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white outline-none disabled:opacity-60 transition-opacity"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm text-foreground outline-none disabled:opacity-60 transition-opacity border"
             style={{
-              background: "#0f1117",
-              border: "1px solid var(--card-border)",
+              background: "var(--background)",
+              borderColor: "var(--card-border)",
             }}
           />
           {streaming ? (
             <button
               type="button"
               onClick={handleStop}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer border"
               style={{
-                background: "rgba(239,68,68,0.1)",
+                background: "rgba(239,68,68,0.08)",
                 color: "var(--danger)",
-                border: "1px solid rgba(239,68,68,0.2)",
+                borderColor: "rgba(239,68,68,0.2)",
               }}
             >
               <StopCircle size={14} /> Stop
@@ -380,7 +381,7 @@ export default function CopilotAsk() {
             <button
               type="submit"
               disabled={!input.trim()}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-40 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-950/20"
               style={{
                 background: "linear-gradient(135deg, var(--primary), var(--accent))",
               }}

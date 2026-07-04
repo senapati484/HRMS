@@ -95,10 +95,12 @@ function SidebarInner({ user }: SidebarProps) {
 
   return (
     <aside
-      className="h-screen sticky top-0 flex flex-col border-r transition-all duration-300 glass-panel"
+      className="h-screen sticky top-0 flex flex-col border-r transition-all duration-300"
       style={{
         width: collapsed ? "72px" : "240px",
         minWidth: collapsed ? "72px" : "240px",
+        background: "var(--sidebar)",
+        borderColor: "var(--sidebar-border)",
       }}
     >
       {/* Logo + collapse */}
@@ -160,12 +162,15 @@ function SidebarInner({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium group relative cursor-pointer"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group relative cursor-pointer hover:bg-slate-500/5"
               style={{
-                background: active ? "rgba(99,102,241,0.1)" : "transparent",
+                background: active ? "rgba(99,102,241,0.08)" : "transparent",
                 color: active ? "var(--primary)" : "var(--muted)",
               }}
             >
+              {active && (
+                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-indigo-500" />
+              )}
               <Icon size={18} className="flex-shrink-0 transition-colors group-hover:text-foreground" />
               {!collapsed && (
                 <span className="group-hover:text-foreground transition-colors flex-1">
@@ -174,8 +179,7 @@ function SidebarInner({ user }: SidebarProps) {
               )}
               {active && !collapsed && (
                 <span
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: "var(--primary)" }}
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-500"
                 />
               )}
             </Link>

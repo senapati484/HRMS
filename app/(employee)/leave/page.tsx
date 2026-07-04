@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import CopilotAsk from "@/components/CopilotAsk";
-import { Sparkles, Calendar, FileText, CheckCircle2, AlertCircle, HelpCircle, Palmtree, ArrowRight } from "lucide-react";
+import { Sparkles, CheckCircle2, AlertCircle, Palmtree, ArrowRight } from "lucide-react";
 
 interface LeaveRequest {
   _id: string;
@@ -20,19 +20,40 @@ interface ParsedLeave {
   startDate: string | null;
   endDate: string | null;
   remarks: string;
-  confidence: { leaveType: boolean; startDate: boolean; endDate: boolean; remarks: boolean };
+  confidence: {
+    leaveType: boolean;
+    startDate: boolean;
+    endDate: boolean;
+    remarks: boolean;
+  };
 }
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; color: string; border: string }> = {
-    Pending: { bg: "rgba(245,158,11,0.12)", color: "var(--warning)", border: "rgba(245,158,11,0.25)" },
-    Approved: { bg: "rgba(16,185,129,0.12)", color: "var(--success)", border: "rgba(16,185,129,0.25)" },
-    Rejected: { bg: "rgba(239,68,68,0.12)", color: "var(--danger)", border: "rgba(239,68,68,0.25)" },
+    Pending: {
+      bg: "rgba(245,158,11,0.08)",
+      color: "var(--warning)",
+      border: "rgba(245,158,11,0.2)",
+    },
+    Approved: {
+      bg: "rgba(16,185,129,0.08)",
+      color: "var(--success)",
+      border: "rgba(16,185,129,0.2)",
+    },
+    Rejected: {
+      bg: "rgba(239,68,68,0.08)",
+      color: "var(--danger)",
+      border: "rgba(239,68,68,0.2)",
+    },
   };
-  const s = styles[status] || { bg: "rgba(156,163,175,0.12)", color: "var(--muted)", border: "rgba(156,163,175,0.2)" };
+  const s = styles[status] || {
+    bg: "rgba(156,163,175,0.08)",
+    color: "var(--muted)",
+    border: "rgba(156,163,175,0.2)",
+  };
   return (
     <span
-      className="text-xs px-2.5 py-0.5 rounded-full font-bold font-precise border uppercase tracking-wider"
+      className="text-xs px-2.5 py-0.5 rounded-full font-bold border"
       style={{ background: s.bg, color: s.color, borderColor: s.border }}
     >
       {status}
@@ -94,7 +115,7 @@ export default function LeavePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setSubmitMsg(data.error || "Failed to submit");
+        setSubmitMsg(data.error || "Failed to submit request");
         return;
       }
       setSubmitMsg("✓ Leave request submitted successfully!");
@@ -109,30 +130,28 @@ export default function LeavePage() {
 
   const inputBorder = (field: keyof ParsedLeave["confidence"]) => {
     if (!confidence) return "1px solid var(--card-border)";
-    return confidence[field]
-      ? "1px solid rgba(16,185,129,0.5)"
-      : "1px solid rgba(245,158,11,0.5)";
+    return confidence[field] ? "1px solid var(--success)" : "1px solid var(--warning)";
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="p-6 space-y-6 max-w-5xl mx-auto text-foreground">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Leave & Time-off</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Leave & Time-off</h1>
         <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-          Request time off and track application status
+          Apply for leaves, view balances, and track approvals
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Leave form */}
         <div className="space-y-6">
-          {/* AI Copilot NL input */}
+          {/* AI Smart Input */}
           <div className="rounded-2xl p-5 glass-panel">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded bg-indigo-500/10 flex items-center justify-center text-indigo-400">
                 <Sparkles size={14} />
               </div>
-              <h3 className="font-bold text-white text-sm font-precise">Smart Request</h3>
+              <h3 className="font-bold text-foreground text-sm font-precise">Smart Request</h3>
             </div>
             <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
               Type your request details below. AI will automatically fill the form fields.
@@ -142,8 +161,8 @@ export default function LeavePage() {
                 value={nlInput}
                 onChange={(e) => setNlInput(e.target.value)}
                 placeholder='e.g. "2 days sick leave next Monday, I have a fever"'
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: "#0f1117", border: "1px solid var(--card-border)" }}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm text-foreground outline-none border transition-all"
+                style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
               />
               <button
                 type="submit"
@@ -166,7 +185,7 @@ export default function LeavePage() {
 
           {/* Leave request form */}
           <div className="rounded-2xl p-5 glass-panel">
-            <h3 className="font-bold text-white mb-4 text-sm tracking-wide font-precise">Apply for Leave</h3>
+            <h3 className="font-bold text-foreground mb-4 text-sm tracking-wide font-precise">Apply for Leave</h3>
             {submitMsg && (
               <div
                 className="mb-4 p-3 rounded-lg text-sm font-semibold border flex items-center gap-2"
@@ -192,8 +211,8 @@ export default function LeavePage() {
                 <select
                   value={form.leaveType}
                   onChange={(e) => setForm((f) => ({ ...f, leaveType: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none cursor-pointer"
-                  style={{ background: "#0f1117", border: inputBorder("leaveType") }}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none cursor-pointer border transition-all"
+                  style={{ background: "var(--background)", border: inputBorder("leaveType") }}
                 >
                   <option value="Paid">Paid Leave</option>
                   <option value="Sick">Sick Leave</option>
@@ -210,9 +229,9 @@ export default function LeavePage() {
                     required
                     value={form.startDate}
                     onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none border transition-all"
                     style={{
-                      background: "#0f1117",
+                      background: "var(--background)",
                       border: inputBorder("startDate"),
                       colorScheme: "dark",
                     }}
@@ -227,9 +246,9 @@ export default function LeavePage() {
                     required
                     value={form.endDate}
                     onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                    className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none border transition-all"
                     style={{
-                      background: "#0f1117",
+                      background: "var(--background)",
                       border: inputBorder("endDate"),
                       colorScheme: "dark",
                     }}
@@ -244,8 +263,8 @@ export default function LeavePage() {
                   rows={3}
                   value={form.remarks}
                   onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
-                  style={{ background: "#0f1117", border: inputBorder("remarks") }}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-foreground outline-none resize-none border transition-all"
+                  style={{ background: "var(--background)", border: inputBorder("remarks") }}
                   placeholder="Reason for leave request..."
                 />
               </div>
@@ -274,19 +293,19 @@ export default function LeavePage() {
               style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.01)" }}
             >
               <Palmtree size={16} className="text-indigo-400" />
-              <h3 className="font-bold text-white text-sm font-precise">My Leave History</h3>
+              <h3 className="font-bold text-foreground text-sm font-precise">My Leave History</h3>
             </div>
             {leaves.length === 0 ? (
               <p className="text-sm p-6 text-center" style={{ color: "var(--muted)" }}>
                 No leave requests logged yet.
               </p>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-black/5 dark:divide-white/5">
                 {leaves.map((l) => (
-                  <div key={l._id} className="p-5 hover:bg-white/[0.01] transition-colors">
+                  <div key={l._id} className="p-5 hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
-                        <span className="text-sm font-bold text-white font-precise">
+                        <span className="text-sm font-bold text-foreground font-precise">
                           {l.leaveType} Leave
                         </span>
                         <div className="text-xs mt-1 font-mono flex items-center gap-1.5" style={{ color: "var(--muted)" }}>
@@ -298,7 +317,7 @@ export default function LeavePage() {
                       <StatusBadge status={l.status} />
                     </div>
                     {l.remarks && (
-                      <p className="text-xs bg-slate-950/40 p-2.5 rounded-lg border border-white/5" style={{ color: "var(--muted)" }}>
+                      <p className="text-xs bg-slate-100 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-white/5" style={{ color: "var(--muted)" }}>
                         {l.remarks}
                       </p>
                     )}

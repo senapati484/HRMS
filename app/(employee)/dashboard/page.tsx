@@ -75,17 +75,17 @@ export default async function EmployeeDashboard() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="p-6 space-y-8 max-w-6xl mx-auto">
+    <div className="p-6 space-y-8 max-w-6xl mx-auto text-foreground">
       {/* Welcome banner */}
       <div
         className="rounded-2xl p-6 border flex items-center justify-between glass-panel relative overflow-hidden"
         style={{
           background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.06))",
-          borderColor: "rgba(99,102,241,0.2)",
+          borderColor: "rgba(99,102,241,0.15)",
         }}
       >
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+        <div className="space-y-1 z-10">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             {greeting}, {user.name.split(" ")[0]} 👋
           </h1>
           <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
@@ -93,8 +93,8 @@ export default async function EmployeeDashboard() {
             <span className="font-mono text-xs opacity-75">{user.employeeId}</span>
           </p>
         </div>
-        <div className="text-right hidden sm:block font-precise">
-          <p className="text-sm font-semibold text-white">
+        <div className="text-right hidden sm:block font-precise z-10">
+          <p className="text-sm font-semibold text-foreground">
             {new Date().toLocaleDateString("en-IN", {
               weekday: "long",
               day: "numeric",
@@ -124,12 +124,12 @@ export default async function EmployeeDashboard() {
             <Link
               key={href}
               href={href}
-              className="rounded-2xl p-5 border transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 block group cursor-pointer glass-panel"
+              className="rounded-2xl p-5 border transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-950/10 block group cursor-pointer glass-panel"
             >
               <div className="text-indigo-400 mb-3 group-hover:text-indigo-300 transition-colors">
                 <Icon size={24} />
               </div>
-              <div className="font-bold text-white text-sm group-hover:text-indigo-300 transition-colors font-precise">
+              <div className="font-bold text-foreground text-sm group-hover:text-indigo-300 transition-colors font-precise">
                 {label}
               </div>
               <div className="text-xs mt-1.5" style={{ color: "var(--muted)" }}>
@@ -142,33 +142,33 @@ export default async function EmployeeDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent activity */}
-        <div
-          className="rounded-2xl border p-6 glass-panel"
-        >
-          <h2 className="font-bold text-white mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
-            <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
-          </h2>
-          {activity.length === 0 ? (
-            <div className="text-center py-12 space-y-2">
-              <div className="text-3xl">📭</div>
-              <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
-                No recent activity records.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {activity.map((item, i) => (
-                <div key={i} className="flex items-center gap-4 text-sm py-2 border-b last:border-0 border-white/5">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
-                  />
-                  <span className="text-white font-medium flex-1">{item.label}</span>
-                  <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="rounded-2xl border p-6 glass-panel flex flex-col justify-between">
+          <div>
+            <h2 className="font-bold text-foreground mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
+              <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
+            </h2>
+            {activity.length === 0 ? (
+              <div className="text-center py-12 space-y-2">
+                <div className="text-3xl">📭</div>
+                <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
+                  No recent activity records.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activity.map((item, i) => (
+                  <div key={i} className="flex items-center gap-4 text-sm py-3 border-b last:border-0 border-white/5">
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
+                    />
+                    <span className="text-foreground font-medium flex-1">{item.label}</span>
+                    <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* AI Copilot Q&A */}
