@@ -5,6 +5,7 @@ import { Leave } from "@/models/Leave";
 import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { sendLeaveStatusNotification } from "@/lib/email";
 
 const decisionSchema = z.object({
   status: z.enum(["Approved", "Rejected"]),
@@ -55,7 +56,16 @@ export async function PATCH(
         decidedAt: new Date(),
       },
       { new: true }
-    ).populate("userId", "name employeeId");
+    ).populate("userId", "name employeeId email personalEmail");
+
+    const leaveData = leave?.toObject?.() ?? leave ?? {};
+    const emp = (leaveData as any).userId;
+    if (emp) {
+      sendLeaveStatusNotification(
+        { name: emp.name, email: emp.email, personalEmail: emp.personalEmail, employeeId: emp.employeeId },
+        { leaveType: (leaveData as any).leaveType, startDate: (leaveData as any).startDate, endDate: (leaveData as any).endDate, status: parsed.data.status, hrComment: parsed.data.hrComment },
+      ).catch((e) => console.error("Email send failed:", e));
+    }
 
     return NextResponse.json({ leave });
   } catch (error) {

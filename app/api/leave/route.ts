@@ -5,6 +5,7 @@ import { Leave } from "@/models/Leave";
 import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { sendNewLeaveNotification } from "@/lib/email";
 
 const leaveSchema = z.object({
   leaveType: z.enum(["Paid", "Sick", "Unpaid"]),
@@ -85,6 +86,19 @@ export async function POST(request: Request) {
       remarks,
       status: "Pending",
     });
+
+    // Notify admin(s) in the same company
+    const employee = await User.findById(decoded.userId, "name employeeId companyName").lean() as any;
+    if (employee?.companyName) {
+      const admins = await User.find({ role: "admin", companyName: employee.companyName }, "name email").lean() as any[];
+      for (const admin of admins) {
+        sendNewLeaveNotification(
+          { name: admin.name, email: admin.email },
+          { name: employee.name, employeeId: employee.employeeId },
+          { leaveType, startDate: start, endDate: end, remarks },
+        ).catch((e) => console.error("Email send failed:", e));
+      }
+    }
 
     return NextResponse.json({ leave }, { status: 201 });
   } catch (error) {

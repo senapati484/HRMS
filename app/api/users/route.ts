@@ -7,6 +7,7 @@ import { z } from "zod";
 import { hashPassword } from "@/lib/auth";
 import { generateEmployeeId } from "@/lib/idGenerator";
 import { Payroll } from "@/models/Payroll";
+import { sendNewEmployeeCredentials } from "@/lib/email";
 
 export async function GET() {
   try {
@@ -99,6 +100,13 @@ export async function POST(request: Request) {
       breakTime: 1,
       updatedBy: decoded.userId,
     });
+
+    // Send credentials email
+    sendNewEmployeeCredentials(
+      { name: user.name, email: user.email, employeeId: user.employeeId },
+      tempPassword,
+      companyName,
+    ).catch((e) => console.error("Email send failed:", e));
 
     return NextResponse.json(
       {
