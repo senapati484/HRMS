@@ -174,7 +174,7 @@ function AdminDashboard() {
   const pendingLeaves = leaves.filter((l) => l.status === "Pending");
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto text-white">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto text-foreground">
       {/* Page title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -333,8 +333,8 @@ function AdminDashboard() {
                       placeholder="Comment / Reason (optional)"
                       value={hrComment}
                       onChange={(e) => setHrComment(e.target.value)}
-                      className="px-3.5 py-2.5 rounded-xl text-xs text-white outline-none w-full"
-                      style={{ background: "#0f1117", border: "1px solid var(--card-border)" }}
+                      className="px-3.5 py-2.5 rounded-xl text-xs text-foreground outline-none w-full border"
+                      style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                     />
                     <div className="flex gap-2">
                       <button
@@ -485,8 +485,8 @@ function AdminDashboard() {
                         required
                         value={payrollForm.basic}
                         onChange={(e) => setPayrollForm((f) => ({ ...f, basic: Number(e.target.value) }))}
-                        className="w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                        style={{ background: "#0f1117", border: "1px solid var(--card-border)" }}
+                        className="w-full px-4 py-2.5 rounded-xl text-sm text-foreground outline-none border"
+                        style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                       />
                     </div>
                     <div>
@@ -498,8 +498,8 @@ function AdminDashboard() {
                         required
                         value={payrollForm.allowances}
                         onChange={(e) => setPayrollForm((f) => ({ ...f, allowances: Number(e.target.value) }))}
-                        className="w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                        style={{ background: "#0f1117", border: "1px solid var(--card-border)" }}
+                        className="w-full px-4 py-2.5 rounded-xl text-sm text-foreground outline-none border"
+                        style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                       />
                     </div>
                     <div>
@@ -511,8 +511,8 @@ function AdminDashboard() {
                         required
                         value={payrollForm.deductions}
                         onChange={(e) => setPayrollForm((f) => ({ ...f, deductions: Number(e.target.value) }))}
-                        className="w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none"
-                        style={{ background: "#0f1117", border: "1px solid var(--card-border)" }}
+                        className="w-full px-4 py-2.5 rounded-xl text-sm text-foreground outline-none border"
+                        style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                       />
                     </div>
 

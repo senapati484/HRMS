@@ -63,17 +63,20 @@ function SidebarInner({ user }: SidebarProps) {
   const isAdmin = user.role === "admin";
   const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
 
-  // Initialize theme from document or localStorage
+  // Initialize theme from localStorage and enforce it in the DOM on mount
   useEffect(() => {
-    const activeTheme = document.documentElement.classList.contains("light") ? "light" : "dark";
-    setTheme(activeTheme);
+    const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "dark";
+    setTheme(savedTheme);
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(savedTheme);
   }, []);
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     localStorage.setItem("theme", nextTheme);
-    document.documentElement.className = nextTheme;
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(nextTheme);
   }
 
   const initials = user.name
