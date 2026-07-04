@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { flushSync } from "react-dom";
 
 interface Message {
   role: "user" | "assistant";
@@ -24,8 +23,10 @@ export default function CopilotAsk() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Accumulate streamed text in a ref — avoids React batching issues
+  const accumulatedRef = useRef("");
+  const rafRef = useRef<number | null>(null);
 
-  // Auto-scroll to bottom when messages update
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -33,12 +34,12 @@ export default function CopilotAsk() {
   async function ask(question: string) {
     if (!question.trim() || streaming) return;
 
-    const userMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, { role: "user", content: question }]);
     setInput("");
     setStreaming(true);
+    accumulatedRef.current = "";
 
-    // Add empty assistant message that will be filled by the stream
+    // Append empty assistant bubble
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: "", streaming: true },
@@ -65,38 +66,46 @@ export default function CopilotAsk() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        accumulated += chunk;
-
-        // flushSync forces React to re-render immediately for EACH chunk
-        // Without this, React 18 batches updates and shows the whole response at once
-        flushSync(() => {
+      // RAF loop — syncs accumulated ref to React state at display frame rate
+      // This avoids flushSync conflicts with React 18's concurrent renderer
+      function scheduleFrame() {
+        rafRef.current = requestAnimationFrame(() => {
           setMessages((prev) => [
             ...prev.slice(0, -1),
-            { role: "assistant", content: accumulated, streaming: true },
+            { role: "assistant", content: accumulatedRef.current, streaming: true },
           ]);
         });
       }
 
-      // Mark streaming as done
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedRef.current += chunk;
+        scheduleFrame();
+      }
+
+      // Cancel any pending animation frame and do final state update
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { role: "assistant", content: accumulated, streaming: false },
+        { role: "assistant", content: accumulatedRef.current, streaming: false },
       ]);
     } catch (err: any) {
-      if (err?.name === "AbortError") return;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (err?.name === "AbortError") {
+        // Preserve what was streamed so far
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "assistant", content: accumulatedRef.current || "Stopped.", streaming: false },
+        ]);
+        return;
+      }
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        {
-          role: "assistant",
-          content: "Sorry, something went wrong. Please try again.",
-        },
+        { role: "assistant", content: "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setStreaming(false);
@@ -117,6 +126,7 @@ export default function CopilotAsk() {
   function clearChat() {
     if (streaming) handleStop();
     setMessages([]);
+    accumulatedRef.current = "";
   }
 
   return (
@@ -182,7 +192,7 @@ export default function CopilotAsk() {
             </div>
             <p className="text-sm font-medium text-white mb-1">Your HR Assistant</p>
             <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
-              I have full context on your leaves, attendance, and payroll. Ask me anything!
+              I have live access to your leaves, attendance &amp; payroll. Ask anything!
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {SUGGESTIONS.slice(0, 3).map((s) => (
@@ -232,14 +242,18 @@ export default function CopilotAsk() {
                           color: "var(--foreground)",
                           border: "1px solid rgba(255,255,255,0.08)",
                           borderBottomLeftRadius: "4px",
+                          whiteSpace: "pre-wrap",
                         }
                   }
                 >
-                  <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
+                  {msg.content}
                   {msg.streaming && (
                     <span
-                      className="inline-block w-0.5 h-4 ml-0.5 align-middle animate-pulse"
-                      style={{ background: "var(--primary)", verticalAlign: "text-bottom" }}
+                      className="inline-block w-0.5 h-4 ml-0.5 animate-pulse"
+                      style={{
+                        background: "var(--primary)",
+                        verticalAlign: "text-bottom",
+                      }}
                     />
                   )}
                 </div>
@@ -250,7 +264,7 @@ export default function CopilotAsk() {
         )}
       </div>
 
-      {/* Suggestions (only when there are messages) */}
+      {/* Quick suggestions when not streaming */}
       {messages.length > 0 && !streaming && (
         <div
           className="px-4 pb-2 flex gap-1.5 overflow-x-auto flex-shrink-0"
