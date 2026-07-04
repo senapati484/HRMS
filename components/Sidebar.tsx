@@ -162,7 +162,11 @@ function SidebarInner({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold group relative cursor-pointer hover:bg-slate-500/5"
+              className={`flex items-center rounded-xl transition-all text-sm font-semibold group relative cursor-pointer hover:bg-slate-500/5 ${
+                collapsed 
+                  ? "justify-center w-10 h-10 mx-auto" 
+                  : "gap-3 px-3 py-2.5"
+              }`}
               style={{
                 background: active ? "rgba(99,102,241,0.08)" : "transparent",
                 color: active ? "var(--primary)" : "var(--muted)",
@@ -189,7 +193,7 @@ function SidebarInner({ user }: SidebarProps) {
 
       {/* User info, Theme & Logout */}
       <div className="border-t p-3 space-y-3" style={{ borderColor: "var(--card-border)" }}>
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden"
             style={{
