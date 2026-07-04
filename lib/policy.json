@@ -1,0 +1,17 @@
+{
+  "annual_paid_leave": 12,
+  "annual_sick_leave": 8,
+  "annual_unpaid_leave": 30,
+  "carry_forward_limit": 5,
+  "unpaid_leave_notice_days": 3,
+  "half_day_late_threshold": "10:30",
+  "max_consecutive_sick_leave": 3,
+  "rules": [
+    "Paid leave must be applied at least 2 working days in advance.",
+    "Sick leave can be applied retroactively with a medical certificate for leaves longer than 3 days.",
+    "Unpaid leave requires at least 3 days advance notice.",
+    "Leave carry-forward is limited to 5 days per calendar year.",
+    "Leaves cannot be taken during the notice period.",
+    "Leave requests are subject to manager approval and business requirements."
+  ]
+}
