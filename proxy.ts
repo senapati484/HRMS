@@ -1,54 +1,56 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
-const EMPLOYEE_PATHS = ["/dashboard", "/profile", "/attendance", "/leave", "/payroll"];
-const ADMIN_PATHS = ["/admin"];
+// Routes that only employees can access (admins redirected to /admin)
+const EMPLOYEE_ONLY = ["/payroll", "/attendance", "/leave", "/profile"];
 
-export default async function proxy(request: NextRequest) {
+// Routes that only admins can access (employees redirected to /dashboard)
+const ADMIN_ONLY = ["/admin"];
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isEmployeePath = EMPLOYEE_PATHS.some((p) => pathname.startsWith(p));
-  const isAdminPath = ADMIN_PATHS.some((p) => pathname.startsWith(p));
-
-  if (!isEmployeePath && !isAdminPath) {
-    return NextResponse.next();
-  }
-
+  // Verify JWT from cookie
   const token = request.cookies.get("hrms_token")?.value;
-
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  let payload: { userId: string; role: string } | null = null;
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    const role = payload.role as string;
-
-    // Block employees from admin routes
-    if (isAdminPath && role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
-    // Admin can view employee routes — no restriction needed
-    return NextResponse.next();
+    const { payload: p } = await jwtVerify(token, JWT_SECRET);
+    payload = p as { userId: string; role: string };
   } catch {
-    // Invalid or expired token — clear cookie and redirect
-    const response = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.set("hrms_token", "", { maxAge: 0, path: "/" });
-    return response;
+    // Invalid / expired token — clear cookie and redirect to login
+    const res = NextResponse.redirect(new URL("/login", request.url));
+    res.cookies.delete("hrms_token");
+    return res;
   }
+
+  const role = payload.role;
+
+  // Admin visiting employee-only routes → redirect to admin panel
+  if (role === "admin" && EMPLOYEE_ONLY.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
+  // Employee visiting admin-only routes → redirect to dashboard
+  if (role !== "admin" && ADMIN_ONLY.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/profile/:path*",
     "/attendance/:path*",
     "/leave/:path*",
     "/payroll/:path*",
+    "/profile/:path*",
     "/admin/:path*",
   ],
 };
