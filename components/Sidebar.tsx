@@ -2,33 +2,44 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import LogoutButton from "./LogoutButton";
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  Palmtree, 
+  CircleDollarSign, 
+  User as UserIcon, 
+  Users, 
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Moon
+} from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: React.ComponentType<any>;
   tab?: string;
 }
 
-// Employee nav — personal routes
 const EMPLOYEE_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "⊞" },
-  { href: "/attendance", label: "Attendance", icon: "📅" },
-  { href: "/leave", label: "Leave & Time-off", icon: "🏖️" },
-  { href: "/payroll", label: "Payroll", icon: "💰" },
-  { href: "/profile", label: "My Profile", icon: "👤" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/attendance", label: "Attendance", icon: Calendar },
+  { href: "/leave", label: "Leave & Time-off", icon: Palmtree },
+  { href: "/payroll", label: "Payroll", icon: CircleDollarSign },
+  { href: "/profile", label: "My Profile", icon: UserIcon },
 ];
 
-// Admin nav — sections inside /admin via ?tab= + their own profile
 const ADMIN_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "⊞" },
-  { href: "/admin?tab=employees", label: "Employees", icon: "👥", tab: "employees" },
-  { href: "/admin?tab=leaves", label: "Leave Requests", icon: "🏖️", tab: "leaves" },
-  { href: "/admin?tab=payroll", label: "Payroll Manager", icon: "💰", tab: "payroll" },
-  { href: "/admin?tab=anomalies", label: "Anomaly Alerts", icon: "🚨", tab: "anomalies" },
-  { href: "/profile", label: "My Profile", icon: "👤" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin?tab=employees", label: "Employees", icon: Users, tab: "employees" },
+  { href: "/admin?tab=leaves", label: "Leave Requests", icon: Palmtree, tab: "leaves" },
+  { href: "/admin?tab=payroll", label: "Payroll Manager", icon: CircleDollarSign, tab: "payroll" },
+  { href: "/admin?tab=anomalies", label: "Anomaly Alerts", icon: AlertTriangle, tab: "anomalies" },
+  { href: "/profile", label: "My Profile", icon: UserIcon },
 ];
 
 interface SidebarProps {
@@ -42,15 +53,28 @@ interface SidebarProps {
   };
 }
 
-// Inner component that uses useSearchParams (needs Suspense boundary)
 function SidebarInner({ user }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
   const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   const isAdmin = user.role === "admin";
   const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
+
+  // Initialize theme from document or localStorage
+  useEffect(() => {
+    const activeTheme = document.documentElement.classList.contains("light") ? "light" : "dark";
+    setTheme(activeTheme);
+  }, []);
+
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    document.documentElement.className = nextTheme;
+  }
 
   const initials = user.name
     .split(" ")
@@ -61,20 +85,16 @@ function SidebarInner({ user }: SidebarProps) {
 
   function isActive(item: NavItem): boolean {
     if (item.tab) {
-      // Admin tab items: active when on /admin with matching ?tab=
       return pathname === "/admin" && currentTab === item.tab;
     }
-    // Regular routes: exact pathname match
     return pathname === item.href;
   }
 
   return (
     <aside
-      className="h-screen sticky top-0 flex flex-col border-r transition-all duration-300"
+      className="h-screen sticky top-0 flex flex-col border-r transition-all duration-300 glass-panel"
       style={{
         width: collapsed ? "72px" : "240px",
-        background: "var(--card)",
-        borderColor: "var(--card-border)",
         minWidth: collapsed ? "72px" : "240px",
       }}
     >
@@ -94,11 +114,11 @@ function SidebarInner({ user }: SidebarProps) {
               H
             </div>
             <div>
-              <span className="font-bold text-white text-sm">HRMS</span>
+              <span className="font-bold text-foreground text-sm tracking-wider font-precise">HRMS</span>
               {isAdmin && (
                 <span
-                  className="ml-2 text-xs px-1.5 py-0.5 rounded font-medium"
-                  style={{ background: "rgba(239,68,68,0.15)", color: "var(--danger)" }}
+                  className="ml-2 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-widest font-precise"
+                  style={{ background: "rgba(239,68,68,0.12)", color: "var(--danger)" }}
                 >
                   Admin
                 </span>
@@ -108,15 +128,14 @@ function SidebarInner({ user }: SidebarProps) {
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg transition-colors hover:bg-white/5 text-xs"
+          className="p-1.5 rounded-lg transition-colors hover:bg-slate-500/10 text-xs cursor-pointer text-[var(--muted)]"
           style={{
-            color: "var(--muted)",
             marginLeft: collapsed ? "auto" : "0",
             marginRight: collapsed ? "auto" : "0",
           }}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? "→" : "←"}
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
@@ -124,28 +143,29 @@ function SidebarInner({ user }: SidebarProps) {
       <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
         {!collapsed && (
           <p
-            className="text-xs font-semibold px-3 pb-2 tracking-widest uppercase"
-            style={{ color: "var(--muted)", opacity: 0.5 }}
+            className="text-[10px] font-bold px-3 pb-2 tracking-widest uppercase font-precise text-[var(--muted)]"
+            style={{ opacity: 0.5 }}
           >
             {isAdmin ? "Administration" : "Navigation"}
           </p>
         )}
         {navItems.map((item) => {
           const active = isActive(item);
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               title={collapsed ? item.label : undefined}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium group"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-medium group relative cursor-pointer"
               style={{
-                background: active ? "rgba(99,102,241,0.15)" : "transparent",
+                background: active ? "rgba(99,102,241,0.1)" : "transparent",
                 color: active ? "var(--primary)" : "var(--muted)",
               }}
             >
-              <span className="text-base flex-shrink-0">{item.icon}</span>
+              <Icon size={18} className="flex-shrink-0 transition-colors group-hover:text-foreground" />
               {!collapsed && (
-                <span className="group-hover:text-white transition-colors flex-1">
+                <span className="group-hover:text-foreground transition-colors flex-1">
                   {item.label}
                 </span>
               )}
@@ -160,9 +180,9 @@ function SidebarInner({ user }: SidebarProps) {
         })}
       </nav>
 
-      {/* User info + logout */}
-      <div className="border-t p-3" style={{ borderColor: "var(--card-border)" }}>
-        <div className="flex items-center gap-3 mb-2">
+      {/* User info, Theme & Logout */}
+      <div className="border-t p-3 space-y-3" style={{ borderColor: "var(--card-border)" }}>
+        <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden"
             style={{
@@ -182,20 +202,38 @@ function SidebarInner({ user }: SidebarProps) {
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-              <p className="text-xs truncate" style={{ color: "var(--muted)" }}>
+              <p className="text-xs font-semibold text-foreground truncate">{user.name}</p>
+              <p className="text-[10px] truncate uppercase font-semibold font-precise text-[var(--muted)]">
                 {user.designation || user.role}
               </p>
             </div>
           )}
         </div>
-        <LogoutButton compact={collapsed} />
+
+        {/* Action button row (Theme toggle + Logout button) */}
+        <div className={`flex gap-2 ${collapsed ? "flex-col" : "flex-row"}`}>
+          {/* Theme Toggler */}
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className={`flex items-center justify-center p-2 rounded-xl transition-all border cursor-pointer hover:bg-slate-500/10 ${
+              collapsed ? "w-full" : "w-11"
+            }`}
+            style={{
+              borderColor: "var(--card-border)",
+              color: "var(--muted)",
+            }}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          
+          <LogoutButton compact={collapsed} />
+        </div>
       </div>
     </aside>
   );
 }
 
-// Exported component wraps SidebarInner in Suspense (required for useSearchParams)
 export default function Sidebar({ user }: SidebarProps) {
   return (
     <Suspense

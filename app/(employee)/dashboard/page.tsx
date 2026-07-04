@@ -7,6 +7,16 @@ import { Attendance } from "@/models/Attendance";
 import { Leave } from "@/models/Leave";
 import CopilotAsk from "@/components/CopilotAsk";
 import Link from "next/link";
+import { 
+  Calendar, 
+  Palmtree, 
+  CircleDollarSign, 
+  User as UserIcon, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle2, 
+  TrendingUp 
+} from "lucide-react";
 
 export default async function EmployeeDashboard() {
   const cookieStore = await cookies();
@@ -22,7 +32,7 @@ export default async function EmployeeDashboard() {
   const today = new Date().toISOString().split("T")[0];
 
   const [recentAttendance, recentLeaves, todayAttendance] = await Promise.all([
-    (await Attendance.find({ userId: decoded.userId }).sort({ createdAt: -1 }).limit(5).lean()) as any[],
+    (await Attendance.find({ userId: decoded.userId }).sort({ date: -1 }).limit(5).lean()) as any[],
     (await Leave.find({ userId: decoded.userId }).sort({ createdAt: -1 }).limit(5).lean()) as any[],
     (await Attendance.findOne({ userId: decoded.userId, date: today }).lean()) as any,
   ]);
@@ -41,7 +51,7 @@ export default async function EmployeeDashboard() {
     })),
     ...recentLeaves.map((l: any) => ({
       type: "leave" as const,
-      label: `${l.leaveType} Leave: ${l.status}`,
+      label: `${l.leaveType} Leave Request: ${l.status}`,
       date: new Date(l.startDate).toISOString().split("T")[0],
       color:
         l.status === "Approved"
@@ -52,39 +62,39 @@ export default async function EmployeeDashboard() {
     })),
   ]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 8);
+    .slice(0, 5);
 
   const quickLinks = [
-    { href: "/attendance", label: "Attendance", icon: "📅", desc: "Check in / Check out" },
-    { href: "/leave", label: "Leave", icon: "🏖️", desc: "Apply for time off" },
-    { href: "/payroll", label: "Payroll", icon: "💰", desc: "View your salary" },
-    { href: "/profile", label: "Profile", icon: "👤", desc: "View & edit your info" },
+    { href: "/attendance", label: "Attendance", icon: Calendar, desc: "Check in / Check out" },
+    { href: "/leave", label: "Leave", icon: Palmtree, desc: "Apply for time off" },
+    { href: "/payroll", label: "Payroll", icon: CircleDollarSign, desc: "View your salary" },
+    { href: "/profile", label: "Profile", icon: UserIcon, desc: "View & edit your info" },
   ];
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="p-6 space-y-8 max-w-6xl mx-auto">
       {/* Welcome banner */}
       <div
-        className="rounded-2xl p-6 border flex items-center justify-between"
+        className="rounded-2xl p-6 border flex items-center justify-between glass-panel relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))",
-          borderColor: "rgba(99,102,241,0.25)",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.06))",
+          borderColor: "rgba(99,102,241,0.2)",
         }}
       >
-        <div>
-          <h1 className="text-2xl font-bold text-white">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-white tracking-tight">
             {greeting}, {user.name.split(" ")[0]} 👋
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+          <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
             {user.designation} · {user.department} ·{" "}
-            <span className="font-mono">{user.employeeId}</span>
+            <span className="font-mono text-xs opacity-75">{user.employeeId}</span>
           </p>
         </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium text-white">
+        <div className="text-right hidden sm:block font-precise">
+          <p className="text-sm font-semibold text-white">
             {new Date().toLocaleDateString("en-IN", {
               weekday: "long",
               day: "numeric",
@@ -93,12 +103,12 @@ export default async function EmployeeDashboard() {
             })}
           </p>
           {todayAttendance ? (
-            <p className="text-xs mt-1" style={{ color: "var(--success)" }}>
-              ✓ {todayAttendance.checkOut ? "Checked out" : "Checked in"} today
+            <p className="text-xs mt-1.5 flex items-center gap-1.5 justify-end" style={{ color: "var(--success)" }}>
+              <CheckCircle2 size={14} /> Checked {todayAttendance.checkOut ? "out" : "in"} today
             </p>
           ) : (
-            <p className="text-xs mt-1" style={{ color: "var(--warning)" }}>
-              ⚠ Not checked in yet
+            <p className="text-xs mt-1.5 flex items-center gap-1.5 justify-end" style={{ color: "var(--warning)" }}>
+              <Clock size={14} /> Not checked in yet
             </p>
           )}
         </div>
@@ -106,22 +116,23 @@ export default async function EmployeeDashboard() {
 
       {/* Quick access */}
       <div>
-        <h2 className="text-xs font-semibold mb-3 tracking-widest uppercase" style={{ color: "var(--muted)" }}>
-          Quick Access
+        <h2 className="text-[10px] font-bold mb-4 tracking-widest uppercase font-precise" style={{ color: "var(--muted)", opacity: 0.6 }}>
+          Quick Action Portal
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {quickLinks.map(({ href, label, icon, desc }) => (
+          {quickLinks.map(({ href, label, icon: Icon, desc }) => (
             <Link
               key={href}
               href={href}
-              className="rounded-2xl p-5 border transition-all hover:scale-105 hover:border-indigo-500/50 block group"
-              style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
+              className="rounded-2xl p-5 border transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 block group cursor-pointer glass-panel"
             >
-              <div className="text-2xl mb-2">{icon}</div>
-              <div className="font-semibold text-white text-sm group-hover:text-indigo-300 transition-colors">
+              <div className="text-indigo-400 mb-3 group-hover:text-indigo-300 transition-colors">
+                <Icon size={24} />
+              </div>
+              <div className="font-bold text-white text-sm group-hover:text-indigo-300 transition-colors font-precise">
                 {label}
               </div>
-              <div className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+              <div className="text-xs mt-1.5" style={{ color: "var(--muted)" }}>
                 {desc}
               </div>
             </Link>
@@ -132,27 +143,28 @@ export default async function EmployeeDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent activity */}
         <div
-          className="rounded-2xl border p-6"
-          style={{ background: "var(--card)", borderColor: "var(--card-border)" }}
+          className="rounded-2xl border p-6 glass-panel"
         >
-          <h2 className="font-semibold text-white mb-4">Recent Activity</h2>
+          <h2 className="font-bold text-white mb-5 text-sm tracking-wide uppercase font-precise flex items-center gap-2">
+            <TrendingUp size={16} className="text-indigo-400" /> Recent Log Activity
+          </h2>
           {activity.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-3xl mb-2">📭</p>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                No activity yet. Check in to get started!
+            <div className="text-center py-12 space-y-2">
+              <div className="text-3xl">📭</div>
+              <p className="text-sm font-medium" style={{ color: "var(--muted)" }}>
+                No recent activity records.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {activity.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
+                <div key={i} className="flex items-center gap-4 text-sm py-2 border-b last:border-0 border-white/5">
                   <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: item.color }}
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }}
                   />
-                  <span className="text-white flex-1">{item.label}</span>
-                  <span style={{ color: "var(--muted)" }}>{item.date}</span>
+                  <span className="text-white font-medium flex-1">{item.label}</span>
+                  <span className="font-mono text-xs" style={{ color: "var(--muted)" }}>{item.date}</span>
                 </div>
               ))}
             </div>
