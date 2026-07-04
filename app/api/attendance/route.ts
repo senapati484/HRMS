@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Attendance } from "@/models/Attendance";
+import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
@@ -30,9 +31,24 @@ export async function GET(request: Request) {
     const query: Record<string, unknown> = {};
 
     if (!allUsers) {
-      // Employee sees only their own; admin can target a specific userId
       const userId = targetUserId && decoded.role === "admin" ? targetUserId : decoded.userId;
+
+      if (decoded.role === "admin" && targetUserId) {
+        const admin = await User.findById(decoded.userId, "companyName").lean() as any;
+        const target = await User.findById(targetUserId, "companyName").lean() as any;
+        if (admin?.companyName && target?.companyName && admin.companyName !== target.companyName) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
+
       query.userId = userId;
+    } else {
+      const admin = await User.findById(decoded.userId, "companyName").lean() as any;
+      const companyName = admin?.companyName;
+      if (companyName) {
+        const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
+        query.userId = { $in: companyUserIds };
+      }
     }
 
     if (from || to) {

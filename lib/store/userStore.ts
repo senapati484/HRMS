@@ -13,13 +13,15 @@ export interface User {
   designation?: string;
   joinDate?: string;
   isVerified: boolean;
+  companyName?: string;
+  companyLogo?: string;
 }
 
 interface UserState {
   user: User | null;
   loading: boolean;
   error: string | null;
-  fetchUser: () => Promise<void>;
+  fetchUser: () => Promise<User | null>;
   setUser: (user: User | null) => void;
   updateUserFields: (fields: Partial<User>) => void;
 }
@@ -36,11 +38,14 @@ export const useUserStore = create<UserState>((set) => ({
       const data = await res.json();
       if (data.user) {
         set({ user: data.user, loading: false });
+        return data.user;
       } else {
         set({ user: null, loading: false });
+        return null;
       }
     } catch (err) {
       set({ error: (err as Error).message || "Failed to load user", loading: false });
+      return null;
     }
   },
   setUser: (user) => set({ user }),

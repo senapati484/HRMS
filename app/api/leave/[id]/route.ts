@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import { Leave } from "@/models/Leave";
+import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
@@ -32,6 +33,19 @@ export async function PATCH(
 
     await connectDB();
 
+    const existing = await Leave.findById(id).lean() as any;
+    if (!existing) return NextResponse.json({ error: "Leave not found" }, { status: 404 });
+
+    const [admin, target] = await Promise.all([
+      User.findById(decoded.userId, "companyName").lean(),
+      User.findById(existing.userId, "companyName").lean(),
+    ]);
+    const adminCompany = (admin as any)?.companyName;
+    const targetCompany = (target as any)?.companyName;
+    if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const leave = await Leave.findByIdAndUpdate(
       id,
       {
@@ -42,8 +56,6 @@ export async function PATCH(
       },
       { new: true }
     ).populate("userId", "name employeeId");
-
-    if (!leave) return NextResponse.json({ error: "Leave not found" }, { status: 404 });
 
     return NextResponse.json({ leave });
   } catch (error) {

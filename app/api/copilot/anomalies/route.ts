@@ -19,14 +19,22 @@ export async function GET() {
 
     await connectDB();
 
+    const adminUser = await User.findById(decoded.userId, "companyName").lean() as any;
+    const companyName = adminUser?.companyName;
+
     const flags: Array<{ type: string; employeeName: string; detail: string; refId?: string }> = [];
 
     // Rule 1: Pending leave requests older than 48 hours
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const stalePending = (await Leave.find({
+    const staleQuery: Record<string, any> = {
       status: "Pending",
       createdAt: { $lt: fortyEightHoursAgo },
-    }).populate("userId", "name").lean()) as any[];
+    };
+    if (companyName) {
+      const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
+      staleQuery.userId = { $in: companyUserIds };
+    }
+    const stalePending = (await Leave.find(staleQuery).populate("userId", "name").lean()) as any[];
 
     for (const leave of stalePending) {
       const userName = (leave.userId as { name: string })?.name ?? "Unknown";
@@ -44,7 +52,9 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
-    const employees = (await User.find({ role: "employee" }, "_id name").lean()) as any[];
+    const employeeFilter: Record<string, any> = { role: "employee" };
+    if (companyName) employeeFilter.companyName = companyName;
+    const employees = (await User.find(employeeFilter, "_id name").lean()) as any[];
 
     const absenceCounts: Record<string, { name: string; count: number }> = {};
     for (const emp of employees) {

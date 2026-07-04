@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User, Shield, Moon, Sun, Clock, Users, Calendar, Compass } from "lucide-react";
+import { useUserStore } from "@/lib/store/userStore";
+import { LogOut, User, Shield, Moon, Sun, Clock, Users, Calendar, Compass, CircleDollarSign } from "lucide-react";
 
 interface UserInfo {
   _id: string;
@@ -19,7 +20,8 @@ interface UserInfo {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [attendance, setAttendance] = useState<any>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
@@ -28,14 +30,9 @@ export default function Header() {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch current user and theme
+  // Fetch current user once and cache in store
   useEffect(() => {
-    fetch("/api/users/me")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.user) setUser(data.user);
-      })
-      .catch(console.error);
+    if (!user) fetchUser();
 
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) {
@@ -128,12 +125,19 @@ export default function Header() {
 
   const initials = user?.name ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "U";
 
-  // Navigation tabs
-  const tabs = [
-    { label: "Employees", href: "/dashboard", icon: Users },
-    { label: "Attendance", href: "/attendance", icon: Calendar },
-    { label: "Time Off", href: "/leave", icon: Compass },
-  ];
+  const tabs = user?.role === "admin"
+    ? [
+        { label: "Overview", href: "/admin", icon: Shield },
+        { label: "Employees", href: "/admin?tab=employees", icon: Users },
+        { label: "Leave Requests", href: "/admin?tab=leaves", icon: Compass },
+        { label: "Anomalies", href: "/admin?tab=anomalies", icon: Clock },
+        { label: "Payroll", href: "/admin?tab=payroll", icon: CircleDollarSign },
+      ]
+    : [
+        { label: "Dashboard", href: "/dashboard", icon: Users },
+        { label: "Attendance", href: "/attendance", icon: Calendar },
+        { label: "Time Off", href: "/leave", icon: Compass },
+      ];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors"
@@ -159,7 +163,8 @@ export default function Header() {
           {/* Navigation Link Tabs */}
           <nav className="hidden md:flex items-center gap-1.5">
             {tabs.map((tab) => {
-              const active = pathname === tab.href;
+              const baseHref = tab.href.split("?")[0];
+              const active = pathname === baseHref;
               const Icon = tab.icon;
               return (
                 <Link

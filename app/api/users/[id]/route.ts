@@ -9,7 +9,7 @@ const EMPLOYEE_ALLOWED_FIELDS = [
   "phone", "address", "profilePicture",
   "about", "jobLove", "interests", "skills", "certifications",
   "dob", "residingAddress", "nationality", "personalEmail", "gender", "maritalStatus",
-  "bankDetails"
+  "bankDetails", "documents"
 ];
 
 // Fields nobody should ever be able to set via PATCH
@@ -29,9 +29,20 @@ export async function GET(
 
     await connectDB();
 
-    // Employees can only fetch their own profile
     if (decoded.role !== "admin" && decoded.userId !== id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (decoded.role === "admin" && decoded.userId !== id) {
+      const [admin, target] = await Promise.all([
+        User.findById(decoded.userId, "companyName").lean(),
+        User.findById(id, "companyName").lean(),
+      ]);
+      const adminCompany = (admin as any)?.companyName;
+      const targetCompany = (target as any)?.companyName;
+      if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const user = (await User.findById(id, "-passwordHash").lean()) as any;
@@ -65,6 +76,9 @@ const userUpdateSchema = z.object({
   personalEmail: z.string().optional(),
   gender: z.string().optional(),
   maritalStatus: z.string().optional(),
+  employmentType: z.enum(["full-time", "part-time", "contract", "intern"]).optional(),
+  workLocation: z.string().optional(),
+  status: z.enum(["active", "inactive", "terminated", "on-leave"]).optional(),
   bankDetails: z.object({
     accountNumber: z.string().optional(),
     bankName: z.string().optional(),
@@ -72,6 +86,12 @@ const userUpdateSchema = z.object({
     pan: z.string().optional(),
     uan: z.string().optional(),
   }).optional(),
+  joinDate: z.string().optional(),
+  documents: z.array(z.object({
+    name: z.string(),
+    url: z.string(),
+    uploadedAt: z.string().optional(),
+  })).optional(),
 });
 
 export async function PATCH(
@@ -97,10 +117,21 @@ export async function PATCH(
     // Remove blocked fields from body regardless of caller
     BLOCKED_FIELDS.forEach((f) => delete (updatePayload as any)[f]);
 
+    if (decoded.role === "admin" && decoded.userId !== id) {
+      const [admin, target] = await Promise.all([
+        User.findById(decoded.userId, "companyName").lean(),
+        User.findById(id, "companyName").lean(),
+      ]);
+      const adminCompany = (admin as any)?.companyName;
+      const targetCompany = (target as any)?.companyName;
+      if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     let updateData: Record<string, unknown>;
 
     if (decoded.role === "admin") {
-      // Admin can update any field (except blocked ones above)
       updateData = updatePayload;
     } else {
       // Employee: only their own profile, only whitelisted fields

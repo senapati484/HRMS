@@ -19,7 +19,11 @@ export async function GET() {
     }
 
     await connectDB();
-    const users = (await User.find({}, "-passwordHash").lean()) as any[];
+    const admin = await User.findById(decoded.userId, "companyName").lean() as any;
+    const companyName = admin?.companyName;
+    const filter: Record<string, any> = {};
+    if (companyName) filter.companyName = companyName;
+    const users = (await User.find(filter, "-passwordHash").sort({ createdAt: -1 }).lean()) as any[];
     return NextResponse.json({ users });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

@@ -26,6 +26,10 @@ export interface IUser extends Document {
   personalEmail?: string;
   gender?: string;
   maritalStatus?: string;
+  employmentType?: "full-time" | "part-time" | "contract" | "intern";
+  workLocation?: string;
+  status?: "active" | "inactive" | "terminated" | "on-leave";
+  reportingManager?: mongoose.Types.ObjectId;
   bankDetails?: {
     accountNumber?: string;
     bankName?: string;
@@ -69,6 +73,10 @@ const UserSchema = new Schema<IUser>(
     personalEmail: { type: String },
     gender: { type: String },
     maritalStatus: { type: String },
+    employmentType: { type: String, enum: ["full-time", "part-time", "contract", "intern"] },
+    workLocation: { type: String },
+    status: { type: String, enum: ["active", "inactive", "terminated", "on-leave"], default: "active" },
+    reportingManager: { type: Schema.Types.ObjectId, ref: "User" },
     bankDetails: {
       accountNumber: { type: String },
       bankName: { type: String },

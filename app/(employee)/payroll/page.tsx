@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUserStore } from "@/lib/store/userStore";
 import { CircleDollarSign, CheckCircle2, AlertTriangle, ShieldCheck, Download } from "lucide-react";
 
 interface PayrollInfo {
@@ -8,20 +9,27 @@ interface PayrollInfo {
   allowances: number;
   deductions: number;
   net: number;
+  bonus?: number;
+  payCycle?: string;
+  currency?: string;
+  taxId?: string;
+  pfNumber?: string;
+  esiNumber?: string;
 }
 
 export default function EmployeePayrollPage() {
+  const cachedUser = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
   const [payroll, setPayroll] = useState<PayrollInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/users/me")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.user) return fetch(`/api/payroll/${data.user._id}`);
-        throw new Error("Could not fetch user details");
-      })
+    if (!cachedUser) {
+      fetchUser();
+      return;
+    }
+    fetch(`/api/payroll/${cachedUser._id}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setError(data.error);
@@ -29,7 +37,7 @@ export default function EmployeePayrollPage() {
       })
       .catch((err) => setError(err.message || "Failed to load payroll details"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [cachedUser]);
 
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">
@@ -110,6 +118,42 @@ export default function EmployeePayrollPage() {
                 <span className="font-semibold font-mono" style={{ color: "var(--danger)" }}>
                   -₹{(payroll.deductions ?? 0).toLocaleString("en-IN")}
                 </span>
+              </div>
+
+              <div className="border-t pt-5 space-y-4" style={{ borderColor: "var(--card-border)" }}>
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Payroll Metadata</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-2.5 rounded-lg bg-slate-500/5">
+                    <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Bonus</span>
+                    <span className="font-bold font-mono text-foreground">₹{(payroll.bonus || 0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-slate-500/5">
+                    <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Pay Cycle</span>
+                    <span className="font-bold text-foreground capitalize">{payroll.payCycle || "monthly"}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-slate-500/5">
+                    <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Currency</span>
+                    <span className="font-bold font-mono text-foreground">{payroll.currency || "INR"}</span>
+                  </div>
+                  {payroll.taxId && (
+                    <div className="p-2.5 rounded-lg bg-slate-500/5">
+                      <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Tax ID</span>
+                      <span className="font-bold font-mono text-foreground">{payroll.taxId}</span>
+                    </div>
+                  )}
+                  {payroll.pfNumber && (
+                    <div className="p-2.5 rounded-lg bg-slate-500/5">
+                      <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>PF Number</span>
+                      <span className="font-bold font-mono text-foreground">{payroll.pfNumber}</span>
+                    </div>
+                  )}
+                  {payroll.esiNumber && (
+                    <div className="p-2.5 rounded-lg bg-slate-500/5">
+                      <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>ESI Number</span>
+                      <span className="font-bold font-mono text-foreground">{payroll.esiNumber}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div

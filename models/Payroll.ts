@@ -18,6 +18,12 @@ export interface IPayroll extends Document {
   allowances: number;
   deductions: number;
   net: number; // virtual
+  bonus: number;
+  payCycle: "monthly" | "bi-weekly" | "weekly";
+  currency: string;
+  taxId?: string;
+  pfNumber?: string;
+  esiNumber?: string;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -41,6 +47,12 @@ const PayrollSchema = new Schema<IPayroll>(
     professionalTax: { type: Number, default: 200 },
     allowances: { type: Number, default: 0 },
     deductions: { type: Number, default: 0 },
+    bonus: { type: Number, default: 0 },
+    payCycle: { type: String, enum: ["monthly", "bi-weekly", "weekly"], default: "monthly" },
+    currency: { type: String, default: "INR" },
+    taxId: { type: String },
+    pfNumber: { type: String },
+    esiNumber: { type: String },
     updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   {

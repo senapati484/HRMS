@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Payroll } from "@/models/Payroll";
+import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
@@ -44,6 +45,12 @@ const payrollSchema = z.object({
   basic: z.number().min(0).optional(),
   allowances: z.number().min(0).optional(),
   deductions: z.number().min(0).optional(),
+  bonus: z.number().min(0).optional(),
+  payCycle: z.enum(["monthly", "bi-weekly", "weekly"]).optional(),
+  currency: z.string().optional(),
+  taxId: z.string().optional(),
+  pfNumber: z.string().optional(),
+  esiNumber: z.string().optional(),
 });
 
 export async function PATCH(
@@ -70,6 +77,16 @@ export async function PATCH(
 
     await connectDB();
 
+    const [admin, target] = await Promise.all([
+      User.findById(decoded.userId, "companyName").lean(),
+      User.findById(userId, "companyName").lean(),
+    ]);
+    const adminCompany = (admin as any)?.companyName;
+    const targetCompany = (target as any)?.companyName;
+    if (adminCompany && targetCompany && adminCompany !== targetCompany) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Use .findOne() and .save() to properly trigger Mongoose pre-save middleware calculations
     let payroll = await Payroll.findOne({ userId });
     if (!payroll) {
@@ -83,6 +100,12 @@ export async function PATCH(
     if (updateData.basic !== undefined) payroll.basic = updateData.basic;
     if (updateData.allowances !== undefined) payroll.allowances = updateData.allowances;
     if (updateData.deductions !== undefined) payroll.deductions = updateData.deductions;
+    if (updateData.bonus !== undefined) payroll.bonus = updateData.bonus;
+    if (updateData.payCycle !== undefined) payroll.payCycle = updateData.payCycle;
+    if (updateData.currency !== undefined) payroll.currency = updateData.currency;
+    if (updateData.taxId !== undefined) payroll.taxId = updateData.taxId;
+    if (updateData.pfNumber !== undefined) payroll.pfNumber = updateData.pfNumber;
+    if (updateData.esiNumber !== undefined) payroll.esiNumber = updateData.esiNumber;
 
     payroll.updatedBy = decoded.userId;
     await payroll.save();

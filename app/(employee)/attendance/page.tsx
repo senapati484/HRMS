@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useUserStore } from "@/lib/store/userStore";
 import { Clock, Calendar, Search, ChevronLeft, ChevronRight, Inbox, RefreshCw, List, CalendarDays, BarChart3, Plane } from "lucide-react";
 
 interface AttendanceRecord {
@@ -17,7 +18,8 @@ interface AttendanceRecord {
 }
 
 export default function AttendancePage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const currentUser = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,18 +35,6 @@ export default function AttendancePage() {
 
   // Search filter for Admin
   const [adminSearch, setAdminSearch] = useState("");
-
-  const fetchUserData = async () => {
-    try {
-      const res = await fetch("/api/users/me");
-      const data = await res.json();
-      if (data.user) {
-        setCurrentUser(data.user);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const fetchAttendanceData = useCallback(async () => {
     if (!currentUser) return;
@@ -81,7 +71,7 @@ export default function AttendancePage() {
   }, [currentUser, selectedDate, currentMonth]);
 
   useEffect(() => {
-    fetchUserData();
+    if (!currentUser) fetchUser();
   }, []);
 
   useEffect(() => {

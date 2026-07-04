@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUserStore } from "@/lib/store/userStore";
 import { 
   User as UserIcon, Mail, Phone, Calendar, Landmark, 
   Award, BookOpen, Briefcase, DollarSign, Lock, AlertCircle, FileText
@@ -30,6 +31,9 @@ interface User {
   personalEmail?: string;
   gender?: string;
   maritalStatus?: string;
+  employmentType?: string;
+  workLocation?: string;
+  status?: string;
   bankDetails?: {
     accountNumber?: string;
     bankName?: string;
@@ -46,6 +50,9 @@ interface User {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const cachedUser = useUserStore((s) => s.user);
+  const fetchUser = useUserStore((s) => s.fetchUser);
+  const updateUserFields = useUserStore((s) => s.updateUserFields);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<User | null>(null);
   const [salaryInfo, setSalaryInfo] = useState<any>(null);
@@ -69,31 +76,29 @@ export default function ProfilePage() {
   const [passMsg, setPassMsg] = useState("");
   const [passLoading, setPassLoading] = useState(false);
 
-  const fetchProfileData = async () => {
-    try {
-      const resUser = await fetch("/api/users/me");
-      const dataUser = await resUser.json();
-      if (dataUser.user) {
-        setCurrentUser(dataUser.user);
-        setEditForm(JSON.parse(JSON.stringify(dataUser.user)));
-
-        // Fetch salary
-        const resSalary = await fetch(`/api/payroll/${dataUser.user._id}`);
-        if (resSalary.ok) {
-          const dataSalary = await resSalary.json();
-          setSalaryInfo(dataSalary.payroll);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Sync from cached store once
   useEffect(() => {
-    fetchProfileData();
-  }, []);
+    if (cachedUser && !currentUser) {
+      setCurrentUser(cachedUser as User);
+      setEditForm(JSON.parse(JSON.stringify(cachedUser)));
+      fetch(`/api/payroll/${cachedUser._id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.payroll) setSalaryInfo(data.payroll);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else if (!cachedUser) {
+      fetchUser();
+    }
+  }, [cachedUser]);
+
+  // Keep editForm synced with currentUser changes from profile saves
+  useEffect(() => {
+    if (currentUser && !editForm) {
+      setEditForm(JSON.parse(JSON.stringify(currentUser)));
+    }
+  }, [currentUser]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +118,7 @@ export default function ProfilePage() {
       }
       setProfileMsg("✓ Profile updated successfully!");
       setCurrentUser(data.user);
+      updateUserFields(data.user);
       router.refresh();
     } catch (err) {
       setProfileMsg("Error saving updates.");
@@ -216,6 +222,24 @@ export default function ProfilePage() {
           
           <p className="text-xs font-semibold mt-3 text-foreground">{editForm.designation || "Employee"}</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>{editForm.department || "No Department"}</p>
+
+          <div className="flex gap-1.5 mt-2 flex-wrap justify-center">
+            {editForm.employmentType && (
+              <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider font-precise" style={{ background: "rgba(99,102,241,0.1)", color: "var(--primary)" }}>
+                {editForm.employmentType}
+              </span>
+            )}
+            {editForm.workLocation && (
+              <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider font-precise" style={{ background: "rgba(245,158,11,0.1)", color: "var(--warning)" }}>
+                {editForm.workLocation}
+              </span>
+            )}
+            {editForm.status && (
+              <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider font-precise" style={{ background: editForm.status === "active" ? "var(--success-bg)" : "var(--warning-bg)", color: editForm.status === "active" ? "var(--success)" : "var(--warning)" }}>
+                {editForm.status}
+              </span>
+            )}
+          </div>
 
           <div className="w-full mt-6 space-y-3.5 text-left text-xs border-t pt-5" style={{ borderColor: "var(--card-border)", color: "var(--muted)" }}>
             <div className="flex items-center gap-2.5 truncate">
@@ -640,6 +664,43 @@ export default function ProfilePage() {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Payroll Metadata */}
+                    <div className="border-t pt-5" style={{ borderColor: "var(--card-border)" }}>
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Payroll Metadata</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                        <div className="p-2.5 rounded-lg bg-slate-500/5">
+                          <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Bonus</span>
+                          <span className="font-bold font-mono text-foreground">₹{(salaryInfo.bonus || 0).toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-slate-500/5">
+                          <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Pay Cycle</span>
+                          <span className="font-bold text-foreground capitalize">{salaryInfo.payCycle || "monthly"}</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-slate-500/5">
+                          <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Currency</span>
+                          <span className="font-bold font-mono text-foreground">{salaryInfo.currency || "INR"}</span>
+                        </div>
+                        {salaryInfo.taxId && (
+                          <div className="p-2.5 rounded-lg bg-slate-500/5">
+                            <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Tax ID</span>
+                            <span className="font-bold font-mono text-foreground">{salaryInfo.taxId}</span>
+                          </div>
+                        )}
+                        {salaryInfo.pfNumber && (
+                          <div className="p-2.5 rounded-lg bg-slate-500/5">
+                            <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>PF Number</span>
+                            <span className="font-bold font-mono text-foreground">{salaryInfo.pfNumber}</span>
+                          </div>
+                        )}
+                        {salaryInfo.esiNumber && (
+                          <div className="p-2.5 rounded-lg bg-slate-500/5">
+                            <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>ESI Number</span>
+                            <span className="font-bold font-mono text-foreground">{salaryInfo.esiNumber}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

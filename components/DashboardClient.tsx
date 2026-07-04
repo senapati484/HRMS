@@ -33,6 +33,9 @@ interface User {
   personalEmail?: string;
   gender?: string;
   maritalStatus?: string;
+  employmentType?: string;
+  workLocation?: string;
+  empStatus?: string;
   bankDetails?: {
     accountNumber?: string;
     bankName?: string;
@@ -218,6 +221,12 @@ export default function DashboardClient({
           monthlyWage: salaryInfo.monthlyWage,
           workingDaysPerWeek: salaryInfo.workingDaysPerWeek,
           breakTime: salaryInfo.breakTime,
+          bonus: salaryInfo.bonus,
+          payCycle: salaryInfo.payCycle,
+          currency: salaryInfo.currency,
+          taxId: salaryInfo.taxId,
+          pfNumber: salaryInfo.pfNumber,
+          esiNumber: salaryInfo.esiNumber,
         }),
       });
       const data = await res.json();
@@ -1121,6 +1130,43 @@ export default function DashboardClient({
                           </div>
                         </div>
 
+                        {/* Payroll Metadata */}
+                        <div className="border-t pt-5" style={{ borderColor: "var(--card-border)" }}>
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Payroll Metadata</h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                            <div className="p-2.5 rounded-lg bg-slate-500/5">
+                              <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Bonus</span>
+                              <span className="font-bold font-mono text-foreground">₹{(salaryInfo.bonus || 0).toLocaleString("en-IN")}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-slate-500/5">
+                              <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Pay Cycle</span>
+                              <span className="font-bold text-foreground capitalize">{salaryInfo.payCycle || "monthly"}</span>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-slate-500/5">
+                              <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Currency</span>
+                              <span className="font-bold font-mono text-foreground">{salaryInfo.currency || "INR"}</span>
+                            </div>
+                            {salaryInfo.taxId && (
+                              <div className="p-2.5 rounded-lg bg-slate-500/5">
+                                <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>Tax ID</span>
+                                <span className="font-bold font-mono text-foreground">{salaryInfo.taxId}</span>
+                              </div>
+                            )}
+                            {salaryInfo.pfNumber && (
+                              <div className="p-2.5 rounded-lg bg-slate-500/5">
+                                <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>PF Number</span>
+                                <span className="font-bold font-mono text-foreground">{salaryInfo.pfNumber}</span>
+                              </div>
+                            )}
+                            {salaryInfo.esiNumber && (
+                              <div className="p-2.5 rounded-lg bg-slate-500/5">
+                                <span className="text-[9px] uppercase font-bold block" style={{ color: "var(--muted)" }}>ESI Number</span>
+                                <span className="font-bold font-mono text-foreground">{salaryInfo.esiNumber}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Net take home pay banner */}
                         <div className="p-4 rounded-xl flex items-center justify-between font-precise"
                           style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(168,85,247,0.04))", border: "1px solid rgba(99,102,241,0.15)" }}>
@@ -1129,7 +1175,7 @@ export default function DashboardClient({
                             <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>Computed as basic + allowances - deductions</p>
                           </div>
                           <span className="text-lg font-extrabold text-foreground font-mono">
-                            ₹{(salaryInfo.basic + salaryInfo.allowances - (salaryInfo.employeePF + salaryInfo.professionalTax)).toLocaleString("en-IN")}
+                            ₹{(salaryInfo.basic + salaryInfo.allowances + (salaryInfo.bonus || 0) - (salaryInfo.employeePF + salaryInfo.professionalTax)).toLocaleString("en-IN")}
                           </span>
                         </div>
 

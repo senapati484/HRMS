@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
 import { Leave } from "@/models/Leave";
+import { User } from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
@@ -26,7 +27,16 @@ export async function GET(request: Request) {
     const all = searchParams.get("all") === "true" && decoded.role === "admin";
 
     const query: Record<string, unknown> = {};
-    if (!all) query.userId = decoded.userId;
+    if (!all) {
+      query.userId = decoded.userId;
+    } else {
+      const admin = await User.findById(decoded.userId, "companyName").lean() as any;
+      const companyName = admin?.companyName;
+      if (companyName) {
+        const companyUserIds = (await User.find({ companyName }, "_id").lean()).map(u => u._id);
+        query.userId = { $in: companyUserIds };
+      }
+    }
     if (status) query.status = status;
 
     const leaves = (await Leave.find(query)

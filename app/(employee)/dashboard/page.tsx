@@ -24,9 +24,10 @@ export default async function EmployeeDashboard() {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  // Fetch all users, today's attendance status, and approved leaves for today
+  const companyFilter = user.companyName ? { companyName: user.companyName } : {};
+
   const [usersRaw, attendancesRaw, leavesRaw] = await Promise.all([
-    User.find({}).sort({ name: 1 }).lean(),
+    User.find(companyFilter).sort({ name: 1 }).lean(),
     Attendance.find({ date: today }).lean(),
     Leave.find({
       status: "Approved",

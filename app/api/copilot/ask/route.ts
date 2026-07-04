@@ -99,6 +99,9 @@ export async function POST(request: Request) {
           basic: payrollDoc.basic ?? 0,
           allowances: payrollDoc.allowances ?? 0,
           deductions: payrollDoc.deductions ?? 0,
+          bonus: payrollDoc.bonus ?? 0,
+          payCycle: payrollDoc.payCycle ?? "monthly",
+          currency: payrollDoc.currency ?? "INR",
           net:
             (payrollDoc.basic ?? 0) +
             (payrollDoc.allowances ?? 0) -
@@ -155,6 +158,9 @@ ${
     ? `Basic Salary: ₹${payrollSummary.basic.toLocaleString("en-IN")}
 Allowances:   +₹${payrollSummary.allowances.toLocaleString("en-IN")}
 Deductions:   -₹${payrollSummary.deductions.toLocaleString("en-IN")}
+Bonus:        ₹${payrollSummary.bonus.toLocaleString("en-IN")}
+Pay Cycle:    ${payrollSummary.payCycle}
+Currency:     ${payrollSummary.currency}
 Net Take-Home: ₹${payrollSummary.net.toLocaleString("en-IN")}`
     : "Payroll not configured yet. Ask HR admin to set it up."
 }

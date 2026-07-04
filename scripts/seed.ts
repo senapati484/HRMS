@@ -10,6 +10,20 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, default: "employee" }, phone: String, address: String,
   profilePicture: String, department: String, designation: String,
   joinDate: Date, isVerified: { type: Boolean, default: true },
+  companyName: String, companyLogo: String,
+  employmentType: { type: String, enum: ["full-time", "part-time", "contract", "intern"] },
+  workLocation: String,
+  status: { type: String, enum: ["active", "inactive", "terminated", "on-leave"], default: "active" },
+  reportingManager: mongoose.Schema.Types.ObjectId,
+  about: String, jobLove: String, interests: String,
+  skills: [String], certifications: [String],
+  dob: Date, residingAddress: String, nationality: String,
+  personalEmail: String, gender: String, maritalStatus: String,
+  bankDetails: {
+    accountNumber: String, bankName: String,
+    ifscCode: String, pan: String, uan: String,
+  },
+  documents: [{ name: String, url: String, uploadedAt: Date }],
 }, { timestamps: true });
 
 const AttendanceSchema = new mongoose.Schema({
@@ -28,7 +42,25 @@ const LeaveSchema = new mongoose.Schema({
 
 const PayrollSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, unique: true },
-  basic: Number, allowances: Number, deductions: Number,
+  monthlyWage: { type: Number, default: 0 },
+  yearlyWage: { type: Number, default: 0 },
+  workingDaysPerWeek: { type: Number, default: 5 },
+  breakTime: { type: Number, default: 1 },
+  basic: { type: Number, default: 0 },
+  hra: { type: Number, default: 0 },
+  standardAllowance: { type: Number, default: 0 },
+  performanceBonus: { type: Number, default: 0 },
+  leaveTravelAllowance: { type: Number, default: 0 },
+  fixedAllowance: { type: Number, default: 0 },
+  employeePF: { type: Number, default: 0 },
+  employerPF: { type: Number, default: 0 },
+  professionalTax: { type: Number, default: 200 },
+  allowances: { type: Number, default: 0 },
+  deductions: { type: Number, default: 0 },
+  bonus: { type: Number, default: 0 },
+  payCycle: { type: String, enum: ["monthly", "bi-weekly", "weekly"], default: "monthly" },
+  currency: { type: String, default: "INR" },
+  taxId: String, pfNumber: String, esiNumber: String,
   updatedBy: mongoose.Schema.Types.ObjectId,
 }, { timestamps: true });
 
@@ -52,13 +84,81 @@ function dateAt(daysAgo: number, hour: number, minute: number): Date {
 }
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
-const employees = [
-  { name: "Priya Sharma",    employeeId: "EMP001", email: "priya.sharma@acme.in",    department: "Engineering",  designation: "Software Engineer" },
-  { name: "Arjun Mehta",     employeeId: "EMP002", email: "arjun.mehta@acme.in",     department: "Engineering",  designation: "Senior Engineer" },
-  { name: "Kavita Nair",     employeeId: "EMP003", email: "kavita.nair@acme.in",     department: "HR",           designation: "HR Executive" },
-  { name: "Rohit Desai",     employeeId: "EMP004", email: "rohit.desai@acme.in",     department: "Finance",      designation: "Financial Analyst" },
-  { name: "Sneha Joshi",     employeeId: "EMP005", email: "sneha.joshi@acme.in",     department: "Marketing",    designation: "Marketing Manager" },
-];
+  const employees = [
+    {
+      name: "Priya Sharma",  employeeId: "EMP001", email: "priya.sharma@acme.in",
+      department: "Engineering", designation: "Software Engineer",
+      employmentType: "full-time", workLocation: "Bengaluru HQ",
+      about: "Full-stack developer with 5 years of experience building scalable web applications using React, Node.js, and TypeScript. Passionate about clean code and great user experiences.",
+      jobLove: "Building products that make people's lives easier and seeing users genuinely benefit from what I create.",
+      interests: "Reading sci-fi novels, hiking, playing chess, and experimenting with new programming languages.",
+      skills: ["React", "TypeScript", "Node.js", "MongoDB", "Docker", "GraphQL"],
+      certifications: ["AWS Certified Developer Associate", "Meta Front-End Developer"],
+      dob: new Date("1994-03-15"), nationality: "Indian", gender: "Female", maritalStatus: "Married",
+      personalEmail: "priya.sharma.personal@gmail.com",
+      bankDetails: { accountNumber: "12345678901", bankName: "State Bank of India", ifscCode: "SBIN0001234", pan: "ABCDE1234F", uan: "101234567890" },
+      documents: [{ name: "Resume 2026", url: "https://storage.acme.in/docs/priya_resume.pdf", uploadedAt: new Date("2026-05-01") }],
+    },
+    {
+      name: "Arjun Mehta",   employeeId: "EMP002", email: "arjun.mehta@acme.in",
+      department: "Engineering", designation: "Senior Engineer",
+      employmentType: "full-time", workLocation: "Bengaluru HQ",
+      about: "Senior software engineer specializing in distributed systems and microservices architecture. 8+ years of experience delivering high-availability platforms.",
+      jobLove: "Solving complex system design challenges and mentoring junior developers to help them grow.",
+      interests: "Travel photography, running marathons, open-source contributions, and tech blogging.",
+      skills: ["Java", "Spring Boot", "Kubernetes", "Kafka", "PostgreSQL", "System Design", "Microservices"],
+      certifications: ["Google Cloud Professional Architect", "Oracle Certified Java Programmer"],
+      dob: new Date("1991-07-22"), nationality: "Indian", gender: "Male", maritalStatus: "Single",
+      personalEmail: "arjun.mehta.personal@outlook.com",
+      bankDetails: { accountNumber: "23456789012", bankName: "ICICI Bank", ifscCode: "ICIC0005678", pan: "BCDEF2345G", uan: "101234567891" },
+      documents: [{ name: "Certifications", url: "https://storage.acme.in/docs/arjun_certs.pdf", uploadedAt: new Date("2026-04-15") }],
+    },
+    {
+      name: "Kavita Nair",   employeeId: "EMP003", email: "kavita.nair@acme.in",
+      department: "HR", designation: "HR Executive",
+      employmentType: "full-time", workLocation: "Mumbai Office",
+      about: "HR professional with expertise in talent acquisition, employee engagement, and performance management. Dedicated to fostering a positive workplace culture.",
+      jobLove: "Helping people find their dream roles within the company and seeing teams thrive together.",
+      interests: "Classical dance (Kathak), cooking, volunteering at animal shelters, and reading psychology books.",
+      skills: ["Talent Acquisition", "Employee Relations", "HRMS Platforms", "Excel", "Communication", "Conflict Resolution"],
+      certifications: ["SHRM-CP Certified", "NLP Practitioner"],
+      dob: new Date("1993-11-08"), nationality: "Indian", gender: "Female", maritalStatus: "Married",
+      personalEmail: "kavita.nair.personal@gmail.com",
+      bankDetails: { accountNumber: "34567890123", bankName: "HDFC Bank", ifscCode: "HDFC0009101", pan: "CDEFG3456H", uan: "101234567892" },
+      documents: [
+        { name: "Resume", url: "https://storage.acme.in/docs/kavita_resume.pdf", uploadedAt: new Date("2026-03-01") },
+        { name: "SHRM Certificate", url: "https://storage.acme.in/docs/kavita_shrm.pdf", uploadedAt: new Date("2025-11-20") },
+      ],
+    },
+    {
+      name: "Rohit Desai",   employeeId: "EMP004", email: "rohit.desai@acme.in",
+      department: "Finance", designation: "Financial Analyst",
+      employmentType: "contract", workLocation: "Remote",
+      about: "Chartered Accountant turned Financial Analyst with expertise in financial modeling, budgeting, and variance analysis. Works remotely from Pune.",
+      jobLove: "Turning raw financial data into actionable insights that drive strategic business decisions.",
+      interests: "Playing guitar, watching Formula 1, stock market trading, and trekking in the Himalayas.",
+      skills: ["Financial Modeling", "Excel VBA", "Tableau", "SAP FICO", "Data Analysis", "Forecasting"],
+      certifications: ["Chartered Accountant (ICA)", "CFA Level 2"],
+      dob: new Date("1990-05-30"), nationality: "Indian", gender: "Male", maritalStatus: "Single",
+      personalEmail: "rohit.desai.personal@yahoo.com",
+      bankDetails: { accountNumber: "45678901234", bankName: "Axis Bank", ifscCode: "UTIB0007890", pan: "DEFGH4567I", uan: "101234567893" },
+      documents: [],
+    },
+    {
+      name: "Sneha Joshi",   employeeId: "EMP005", email: "sneha.joshi@acme.in",
+      department: "Marketing", designation: "Marketing Manager",
+      employmentType: "full-time", workLocation: "Bengaluru HQ",
+      about: "Creative marketing leader with 6+ years of experience driving brand growth through digital campaigns, content strategy, and data-driven marketing.",
+      jobLove: "Crafting compelling brand stories that connect with audiences and watching campaigns exceed their KPIs.",
+      interests: "Watercolor painting, yoga, podcasting about women in tech, and exploring local cafes.",
+      skills: ["Brand Strategy", "Google Ads", "SEO/SEM", "Content Marketing", "Analytics", "Social Media"],
+      certifications: ["Google Digital Marketing Certified", "HubSpot Inbound Marketing"],
+      dob: new Date("1992-09-18"), nationality: "Indian", gender: "Female", maritalStatus: "Divorced",
+      personalEmail: "sneha.joshi.personal@gmail.com",
+      bankDetails: { accountNumber: "56789012345", bankName: "Kotak Mahindra", ifscCode: "KKBK0002345", pan: "EFGHI5678J", uan: "101234567894" },
+      documents: [{ name: "Portfolio", url: "https://storage.acme.in/docs/sneha_portfolio.pdf", uploadedAt: new Date("2026-06-01") }],
+    },
+  ];
 
 async function seed() {
   await mongoose.connect(MONGODB_URI!);
@@ -88,6 +188,28 @@ async function seed() {
     isVerified: true,
     phone: "+91 98765 00001",
     address: "102 MG Road, Bengaluru",
+    companyName: "Acme Corp",
+    employmentType: "full-time",
+    workLocation: "Bengaluru HQ",
+    status: "active",
+    about: "HR Manager with 10+ years of experience in building high-performance teams and driving organizational growth.",
+    jobLove: "Creating an environment where every employee feels valued and has opportunities to grow.",
+    interests: "Leadership books, meditation, golf, and mentoring young professionals.",
+    skills: ["HR Strategy", "Team Building", "Performance Management", "Recruitment", "Conflict Resolution"],
+    certifications: ["SPHR Certified", "HR Analytics Professional"],
+    dob: new Date("1985-04-12"),
+    nationality: "Indian",
+    gender: "Male",
+    maritalStatus: "Married",
+    personalEmail: "admin.singh.personal@gmail.com",
+    bankDetails: {
+      accountNumber: "67890123456",
+      bankName: "Yes Bank",
+      ifscCode: "YESB0006789",
+      pan: "FGHIJ6789K",
+      uan: "101234567895",
+    },
+    documents: [{ name: "Admin ID Proof", url: "https://storage.acme.in/docs/admin_id.pdf", uploadedAt: new Date("2024-01-01") }],
   });
 
   // Create employees
@@ -100,18 +222,22 @@ async function seed() {
       isVerified: true,
       phone: `+91 98765 0000${i + 2}`,
       address: `${(i + 1) * 10} Koramangala, Bengaluru`,
+      companyName: "Acme Corp",
+      status: "active",
+      residingAddress: `${(i + 1) * 10 + 5} Electronic City, Bengaluru`,
+      companyLogo: "",
     }))
   );
 
   console.log(`👤 Created 1 admin + ${createdEmployees.length} employees`);
 
-  // Payroll
+  // Payroll — values pre-computed to match the real model's pre('save') formula
   const payrollData = [
-    { basic: 85000, allowances: 15000, deductions: 8000 },
-    { basic: 110000, allowances: 20000, deductions: 12000 },
-    { basic: 65000, allowances: 10000, deductions: 6000 },
-    { basic: 75000, allowances: 12000, deductions: 7500 },
-    { basic: 90000, allowances: 18000, deductions: 9000 },
+    { monthlyWage: 170000, yearlyWage: 2040000, basic: 85000, hra: 42500, standardAllowance: 14161, performanceBonus: 14161, leaveTravelAllowance: 14161, fixedAllowance: 17, employeePF: 10200, employerPF: 10200, professionalTax: 200, allowances: 85000, deductions: 10400, bonus: 5000, payCycle: "monthly", currency: "INR", taxId: "TAX001", pfNumber: "PF/BNG/001", esiNumber: "ESI/BNG/001", workingDaysPerWeek: 5, breakTime: 1 },
+    { monthlyWage: 220000, yearlyWage: 2640000, basic: 110000, hra: 55000, standardAllowance: 18326, performanceBonus: 18326, leaveTravelAllowance: 18326, fixedAllowance: 22, employeePF: 13200, employerPF: 13200, professionalTax: 200, allowances: 110000, deductions: 13400, bonus: 10000, payCycle: "monthly", currency: "INR", taxId: "TAX002", pfNumber: "PF/BNG/002", esiNumber: "ESI/BNG/002", workingDaysPerWeek: 5, breakTime: 1 },
+    { monthlyWage: 130000, yearlyWage: 1560000, basic: 65000, hra: 32500, standardAllowance: 10829, performanceBonus: 10829, leaveTravelAllowance: 10829, fixedAllowance: 13, employeePF: 7800, employerPF: 7800, professionalTax: 200, allowances: 65000, deductions: 8000, bonus: 3000, payCycle: "monthly", currency: "INR", taxId: "TAX003", pfNumber: "PF/MUM/001", esiNumber: "ESI/MUM/001", workingDaysPerWeek: 5, breakTime: 1 },
+    { monthlyWage: 150000, yearlyWage: 1800000, basic: 75000, hra: 37500, standardAllowance: 12495, performanceBonus: 12495, leaveTravelAllowance: 12495, fixedAllowance: 15, employeePF: 9000, employerPF: 9000, professionalTax: 200, allowances: 75000, deductions: 9200, bonus: 0, payCycle: "monthly", currency: "INR", taxId: "TAX004", pfNumber: "", esiNumber: "", workingDaysPerWeek: 4, breakTime: 0.5 },
+    { monthlyWage: 180000, yearlyWage: 2160000, basic: 90000, hra: 45000, standardAllowance: 14994, performanceBonus: 14994, leaveTravelAllowance: 14994, fixedAllowance: 18, employeePF: 10800, employerPF: 10800, professionalTax: 200, allowances: 90000, deductions: 11000, bonus: 8000, payCycle: "monthly", currency: "INR", taxId: "TAX005", pfNumber: "PF/BNG/003", esiNumber: "ESI/BNG/003", workingDaysPerWeek: 5, breakTime: 1 },
   ];
 
   await Payroll.insertMany(
