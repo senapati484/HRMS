@@ -29,7 +29,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const user = await User.findById(id, "-passwordHash").lean();
+    const user = (await User.findById(id, "-passwordHash").lean()) as any;
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     return NextResponse.json({ user });
@@ -72,7 +72,7 @@ export async function PATCH(
     }
 
     await connectDB();
-    const user = await User.findByIdAndUpdate(id, updateData, { new: true, select: "-passwordHash" }).lean();
+    const user = (await User.findByIdAndUpdate(id, updateData, { new: true, select: "-passwordHash" }).lean()) as any;
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     return NextResponse.json({ user });

@@ -61,7 +61,7 @@ const employees = [
 ];
 
 async function seed() {
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(MONGODB_URI!);
   console.log("✅ Connected to MongoDB");
 
   // Wipe collections

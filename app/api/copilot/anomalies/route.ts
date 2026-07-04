@@ -23,10 +23,10 @@ export async function GET() {
 
     // Rule 1: Pending leave requests older than 48 hours
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    const stalePending = await Leave.find({
+    const stalePending = (await Leave.find({
       status: "Pending",
       createdAt: { $lt: fortyEightHoursAgo },
-    }).populate<{ userId: { name: string } }>("userId", "name").lean();
+    }).populate("userId", "name").lean()) as any[];
 
     for (const leave of stalePending) {
       const userName = (leave.userId as { name: string })?.name ?? "Unknown";
@@ -44,7 +44,7 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
 
-    const employees = await User.find({ role: "employee" }, "_id name").lean();
+    const employees = (await User.find({ role: "employee" }, "_id name").lean()) as any[];
 
     const absenceCounts: Record<string, { name: string; count: number }> = {};
     for (const emp of employees) {

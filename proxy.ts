@@ -7,7 +7,7 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const EMPLOYEE_PATHS = ["/dashboard", "/profile", "/attendance", "/leave", "/payroll"];
 const ADMIN_PATHS = ["/admin"];
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isEmployeePath = EMPLOYEE_PATHS.some((p) => pathname.startsWith(p));
@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
     // Admin can view employee routes — no restriction needed
     return NextResponse.next();
   } catch {
-    // Invalid or expired token
+    // Invalid or expired token — clear cookie and redirect
     const response = NextResponse.redirect(new URL("/login", request.url));
     response.cookies.set("hrms_token", "", { maxAge: 0, path: "/" });
     return response;

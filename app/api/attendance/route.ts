@@ -41,10 +41,10 @@ export async function GET(request: Request) {
       if (to) (query.date as Record<string, string>).$lte = to;
     }
 
-    const records = await Attendance.find(query)
+    const records = (await Attendance.find(query)
       .populate("userId", "name employeeId department")
       .sort({ date: -1 })
-      .lean();
+      .lean()) as any[];
 
     return NextResponse.json({ attendance: records });
   } catch (error) {

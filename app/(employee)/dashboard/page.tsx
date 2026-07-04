@@ -17,7 +17,7 @@ export default async function EmployeeDashboard() {
 
   await connectDB();
 
-  const user = await User.findById(decoded.userId, "-passwordHash").lean();
+  const user = (await User.findById(decoded.userId, "-passwordHash").lean()) as any;
   if (!user) redirect("/login");
 
   // Recent activity: last 5 attendance + leave combined

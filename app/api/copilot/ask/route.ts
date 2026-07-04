@@ -27,9 +27,9 @@ export async function POST(request: Request) {
       userId: decoded.userId,
       status: "Approved",
       startDate: { $gte: startOfYear, $lte: endOfYear },
-    }).lean();
+    }).lean() as any[];
 
-    const used = { Paid: 0, Sick: 0, Unpaid: 0 };
+    const used: Record<string, number> = { Paid: 0, Sick: 0, Unpaid: 0 };
     for (const leave of approvedLeaves) {
       const start = new Date(leave.startDate);
       const end = new Date(leave.endDate);

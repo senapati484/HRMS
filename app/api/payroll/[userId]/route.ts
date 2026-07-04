@@ -23,7 +23,7 @@ export async function GET(
 
     await connectDB();
 
-    const payroll = await Payroll.findOne({ userId }).populate("userId", "name employeeId").lean({ virtuals: true });
+    const payroll = (await Payroll.findOne({ userId }).populate("userId", "name employeeId").lean({ virtuals: true })) as any;
     if (!payroll) return NextResponse.json({ error: "Payroll not found" }, { status: 404 });
 
     return NextResponse.json({ payroll });
@@ -51,7 +51,7 @@ export async function PATCH(
 
     await connectDB();
 
-    const payroll = await Payroll.findOneAndUpdate(
+    const payroll = (await Payroll.findOneAndUpdate(
       { userId },
       {
         ...(basic !== undefined && { basic }),
@@ -60,7 +60,7 @@ export async function PATCH(
         updatedBy: decoded.userId,
       },
       { new: true, upsert: true }
-    ).lean({ virtuals: true });
+    ).lean({ virtuals: true })) as any;
 
     return NextResponse.json({ payroll });
   } catch (error) {

@@ -29,11 +29,11 @@ export async function GET(request: Request) {
     if (!all) query.userId = decoded.userId;
     if (status) query.status = status;
 
-    const leaves = await Leave.find(query)
+    const leaves = (await Leave.find(query)
       .populate("userId", "name employeeId department")
       .populate("decidedBy", "name")
       .sort({ createdAt: -1 })
-      .lean();
+      .lean()) as any[];
 
     return NextResponse.json({ leaves });
   } catch (error) {
