@@ -47,6 +47,7 @@ export default function AttendancePage() {
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -61,6 +62,7 @@ export default function AttendancePage() {
   }, [today]);
 
   useEffect(() => {
+    setMounted(true);
     fetchAttendance();
   }, [fetchAttendance]);
 
@@ -122,14 +124,13 @@ export default function AttendancePage() {
             <Clock size={24} />
           </div>
           <div>
-            <h2 className="font-bold text-foreground text-sm tracking-wide font-precise">
+            <h2 className="font-bold text-foreground text-sm tracking-wide font-precise" suppressHydrationWarning>
               Today —{" "}
-              {new Date().toLocaleDateString("en-IN", {
+              {mounted ? new Date().toLocaleDateString("en-IN", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
-                
-              })}
+              }) : "Loading date..."}
             </h2>
             {todayRecord ? (
               <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs font-mono" style={{ color: "var(--muted)" }}>
@@ -172,15 +173,19 @@ export default function AttendancePage() {
           <button
             onClick={handleCheckInOut}
             disabled={isDisabled}
-            className="px-6 py-3 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-50 hover:scale-[1.02] cursor-pointer flex items-center gap-2"
+            className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              isDisabled ? "cursor-not-allowed opacity-75" : "text-white cursor-pointer hover:scale-[1.02]"
+            }`}
             style={{
               background: isDisabled
-                ? "var(--card-border)"
+                ? "none"
                 : "linear-gradient(135deg, var(--primary), var(--accent))",
+              border: isDisabled ? "1px solid var(--card-border)" : "none",
+              color: isDisabled ? "var(--muted)" : "#ffffff",
             }}
           >
             {isDisabled && todayRecord?.checkOut ? (
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={16} className="text-emerald-500" />
             ) : (
               <Clock size={16} />
             )}
