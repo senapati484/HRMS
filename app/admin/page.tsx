@@ -182,7 +182,7 @@ function AdminDashboard() {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}>
               <ShieldAlert size={16} />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">HR Control Center</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">HR Control Center</h1>
           </div>
           <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
             Review pending leaves, update payroll parameters, track anomalies and verify employee records
@@ -208,10 +208,10 @@ function AdminDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className="px-4 py-3.5 text-sm font-semibold border-b-2 transition-all relative whitespace-nowrap cursor-pointer font-precise"
+              className="px-4 py-3.5 text-sm font-bold border-b-2 transition-all relative whitespace-nowrap cursor-pointer font-precise"
               style={{
                 borderColor: activeTab === tab.id ? "var(--primary)" : "transparent",
-                color: activeTab === tab.id ? "white" : "var(--muted)",
+                color: activeTab === tab.id ? "var(--primary)" : "var(--muted)",
               }}
             >
               {tab.label}
@@ -237,31 +237,31 @@ function AdminDashboard() {
               <table className="w-full border-collapse text-left text-sm min-w-[700px]">
                 <thead>
                   <tr className="border-b" style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.02)" }}>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise">Employee</th>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise">ID / Role</th>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise">Department</th>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise">Designation</th>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise">Status</th>
-                    <th className="p-4 font-bold text-white uppercase tracking-wider text-xs font-precise text-right">Actions</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise">Employee</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise">ID / Role</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise">Department</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise">Designation</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise">Status</th>
+                    <th className="p-4 font-bold text-foreground uppercase tracking-wider text-xs font-precise text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                   {employees.map((emp) => (
-                    <tr key={emp._id} className="hover:bg-white/[0.01] transition-colors">
+                    <tr key={emp._id} className="hover:bg-slate-100/5 dark:hover:bg-white/[0.01] transition-colors">
                       <td className="p-4">
-                        <div className="font-bold text-white">{emp.name}</div>
+                        <div className="font-bold text-foreground">{emp.name}</div>
                         <div className="text-xs font-mono" style={{ color: "var(--muted)" }}>
                           {emp.email}
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="text-white font-semibold font-mono">{emp.employeeId}</div>
-                        <div className="text-xs uppercase font-bold tracking-wider font-precise text-indigo-400 mt-0.5">
+                        <div className="text-foreground font-semibold font-mono">{emp.employeeId}</div>
+                        <div className="text-[10px] uppercase font-bold tracking-wider font-precise text-indigo-500 dark:text-indigo-400 mt-0.5">
                           {emp.role}
                         </div>
                       </td>
-                      <td className="p-4 text-white font-medium">{emp.department || "—"}</td>
-                      <td className="p-4 text-white font-medium">{emp.designation || "—"}</td>
+                      <td className="p-4 text-foreground font-medium">{emp.department || "—"}</td>
+                      <td className="p-4 text-foreground font-medium">{emp.designation || "—"}</td>
                       <td className="p-4">
                         <span
                           className="text-[10px] px-2.5 py-0.5 rounded-full font-bold border uppercase tracking-wider font-precise"
@@ -309,19 +309,19 @@ function AdminDashboard() {
                 >
                   <div className="space-y-3">
                     <div className="flex items-center gap-2.5">
-                      <h3 className="font-bold text-white text-base">{l.userId?.name || "Unknown"}</h3>
+                      <h3 className="font-bold text-foreground text-base">{l.userId?.name || "Unknown"}</h3>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold font-mono" style={{ background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)" }}>
                         {l.userId?.employeeId || "—"}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-200">
-                      Requested <strong className="text-indigo-300 font-precise">{l.leaveType} Leave</strong>
-                      <span className="text-slate-400 font-mono text-xs mx-1">
+                    <p className="text-sm text-foreground/80">
+                      Requested <strong className="text-indigo-600 dark:text-indigo-300 font-precise">{l.leaveType} Leave</strong>
+                      <span className="font-mono text-xs mx-1" style={{ color: "var(--muted)" }}>
                         ({new Date(l.startDate).toLocaleDateString("en-IN")} to {new Date(l.endDate).toLocaleDateString("en-IN")})
                       </span>
                     </p>
                     {l.remarks && (
-                      <p className="text-xs bg-slate-950/40 p-3 rounded-lg border border-white/5 font-mono max-w-2xl" style={{ color: "var(--muted)" }}>
+                      <p className="text-xs bg-slate-100 dark:bg-slate-950/40 p-3 rounded-lg border border-slate-200 dark:border-white/5 font-mono max-w-2xl text-foreground/80">
                         Reason: &quot;{l.remarks}&quot;
                       </p>
                     )}
@@ -361,8 +361,8 @@ function AdminDashboard() {
 
         {activeTab === "anomalies" && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl text-xs bg-amber-950/20 border border-amber-500/20 text-amber-200 flex items-start gap-2">
-              <AlertCircle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="p-4 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <div>
                 <strong>Operational Intelligence Alerts:</strong> Flags generated automatically based on stale leave approval delays (7+ days pending) and abnormal absence thresholds (3+ absences this month).
               </div>
@@ -393,7 +393,7 @@ function AdminDashboard() {
                     {anom.type === "stale_leave" ? <Clock size={16} /> : <AlertTriangle size={16} />}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-white text-sm font-precise">
+                    <h3 className="font-bold text-foreground text-sm font-precise">
                       {anom.type === "stale_leave" ? "Stale Leave Request Delay" : "Abnormal Absence Threshold"}: {anom.employeeName}
                     </h3>
                     <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
@@ -402,7 +402,7 @@ function AdminDashboard() {
                     {anom.type === "stale_leave" && (
                       <button
                         onClick={() => setActiveTab("leaves")}
-                        className="text-xs text-indigo-400 font-bold hover:underline mt-2.5 flex items-center gap-1 cursor-pointer font-precise"
+                        className="text-xs text-indigo-500 dark:text-indigo-400 font-bold hover:underline mt-2.5 flex items-center gap-1 cursor-pointer font-precise"
                       >
                         Navigate to approval board <ArrowRight size={12} />
                       </button>
@@ -425,18 +425,18 @@ function AdminDashboard() {
                 <Users size={16} className="text-indigo-400" />
                 Select Employee
               </div>
-              <div className="divide-y divide-white/5 max-h-[480px] overflow-y-auto">
+              <div className="divide-y divide-slate-100 dark:divide-white/5 max-h-[480px] overflow-y-auto">
                 {employees.map((emp) => (
                   <button
                     key={emp._id}
                     onClick={() => handleSelectEmployeeForPayroll(emp)}
-                    className="w-full p-4 text-left transition-all hover:bg-white/[0.01] flex flex-col gap-1 cursor-pointer border-l-2 border-transparent"
+                    className="w-full p-4 text-left transition-all hover:bg-slate-100/5 dark:hover:bg-white/[0.01] flex flex-col gap-1 cursor-pointer border-l-2 border-transparent"
                     style={{ 
                       background: selectedEmp?._id === emp._id ? "rgba(99,102,241,0.08)" : "transparent",
                       borderLeftColor: selectedEmp?._id === emp._id ? "var(--primary)" : "transparent"
                     }}
                   >
-                    <span className="font-bold text-sm text-white">{emp.name}</span>
+                    <span className="font-bold text-sm text-foreground">{emp.name}</span>
                     <span className="text-xs" style={{ color: "var(--muted)" }}>
                       {emp.department} · {emp.employeeId}
                     </span>
@@ -454,10 +454,10 @@ function AdminDashboard() {
                       <div className="w-6 h-6 rounded bg-indigo-500/10 flex items-center justify-center text-indigo-400">
                         <User size={14} />
                       </div>
-                      <h3 className="text-base font-bold text-white font-precise">Payroll configuration</h3>
+                      <h3 className="text-base font-bold text-foreground font-precise">Payroll configuration</h3>
                     </div>
                     <p style={{ color: "var(--muted)" }} className="text-xs">
-                      Setting parameters for <strong className="text-white">{selectedEmp.name}</strong> ({selectedEmp.employeeId})
+                      Setting parameters for <strong className="text-foreground">{selectedEmp.name}</strong> ({selectedEmp.employeeId})
                     </p>
                   </div>
 
@@ -517,8 +517,8 @@ function AdminDashboard() {
                     </div>
 
                     <div className="border-t pt-5 flex justify-between items-center" style={{ borderColor: "var(--card-border)" }}>
-                      <span className="font-bold text-white text-xs font-precise uppercase tracking-wider">Estimated Net Salary</span>
-                      <span className="font-bold text-lg text-emerald-400 font-mono">
+                      <span className="font-bold text-foreground text-xs font-precise uppercase tracking-wider">Estimated Net Salary</span>
+                      <span className="font-bold text-lg text-emerald-500 dark:text-emerald-400 font-mono">
                         ₹{(payrollForm.basic + payrollForm.allowances - payrollForm.deductions).toLocaleString("en-IN")}
                       </span>
                     </div>
@@ -554,7 +554,7 @@ export default function AdminPage() {
   return (
     <Suspense fallback={
       <div className="p-6 flex items-center justify-center min-h-96">
-        <div className="text-white animate-pulse font-medium">Loading control panel...</div>
+        <div className="text-foreground animate-pulse font-medium">Loading control panel...</div>
       </div>
     }>
       <AdminDashboard />
