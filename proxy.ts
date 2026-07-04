@@ -3,8 +3,8 @@ import { jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
-// Routes that only employees can access (admins redirected to /admin)
-const EMPLOYEE_ONLY = ["/payroll", "/attendance", "/leave", "/profile"];
+// Admins are blocked from these personal-employee-only routes (not profile — they need that too)
+const EMPLOYEE_ONLY = ["/payroll", "/attendance", "/leave"];
 
 // Routes that only admins can access (employees redirected to /dashboard)
 const ADMIN_ONLY = ["/admin"];

@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import LogoutButton from "./LogoutButton";
 
 interface NavItem {
   href: string;
   label: string;
   icon: string;
-  tab?: string; // for admin tab switching
+  tab?: string;
 }
 
 // Employee nav — personal routes
@@ -21,13 +21,14 @@ const EMPLOYEE_NAV: NavItem[] = [
   { href: "/profile", label: "My Profile", icon: "👤" },
 ];
 
-// Admin nav — all sections live inside /admin page via ?tab= param
+// Admin nav — sections inside /admin via ?tab= + their own profile
 const ADMIN_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "⊞" },
   { href: "/admin?tab=employees", label: "Employees", icon: "👥", tab: "employees" },
   { href: "/admin?tab=leaves", label: "Leave Requests", icon: "🏖️", tab: "leaves" },
   { href: "/admin?tab=payroll", label: "Payroll Manager", icon: "💰", tab: "payroll" },
   { href: "/admin?tab=anomalies", label: "Anomaly Alerts", icon: "🚨", tab: "anomalies" },
+  { href: "/profile", label: "My Profile", icon: "👤" },
 ];
 
 interface SidebarProps {
@@ -41,9 +42,11 @@ interface SidebarProps {
   };
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+// Inner component that uses useSearchParams (needs Suspense boundary)
+function SidebarInner({ user }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = user.role === "admin";
@@ -56,16 +59,12 @@ export default function Sidebar({ user }: SidebarProps) {
     .slice(0, 2)
     .toUpperCase();
 
-  // Determine active item — for admin tab items match by tab param
-  function isActive(item: NavItem) {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const currentTab = params.get("tab");
-      if (item.tab) return pathname === "/admin" && currentTab === item.tab;
-      if (item.href === "/dashboard") return pathname === "/dashboard";
+  function isActive(item: NavItem): boolean {
+    if (item.tab) {
+      // Admin tab items: active when on /admin with matching ?tab=
+      return pathname === "/admin" && currentTab === item.tab;
     }
-    // SSR fallback
-    if (item.tab) return false;
+    // Regular routes: exact pathname match
     return pathname === item.href;
   }
 
@@ -193,5 +192,21 @@ export default function Sidebar({ user }: SidebarProps) {
         <LogoutButton compact={collapsed} />
       </div>
     </aside>
+  );
+}
+
+// Exported component wraps SidebarInner in Suspense (required for useSearchParams)
+export default function Sidebar({ user }: SidebarProps) {
+  return (
+    <Suspense
+      fallback={
+        <aside
+          className="h-screen sticky top-0 flex flex-col border-r"
+          style={{ width: "240px", minWidth: "240px", background: "var(--card)", borderColor: "var(--card-border)" }}
+        />
+      }
+    >
+      <SidebarInner user={user} />
+    </Suspense>
   );
 }

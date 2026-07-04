@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { flushSync } from "react-dom";
 
 interface Message {
   role: "user" | "assistant";
@@ -73,11 +74,14 @@ export default function CopilotAsk() {
         const chunk = decoder.decode(value, { stream: true });
         accumulated += chunk;
 
-        // Update the last message with accumulated text
-        setMessages((prev) => [
-          ...prev.slice(0, -1),
-          { role: "assistant", content: accumulated, streaming: true },
-        ]);
+        // flushSync forces React to re-render immediately for EACH chunk
+        // Without this, React 18 batches updates and shows the whole response at once
+        flushSync(() => {
+          setMessages((prev) => [
+            ...prev.slice(0, -1),
+            { role: "assistant", content: accumulated, streaming: true },
+          ]);
+        });
       }
 
       // Mark streaming as done

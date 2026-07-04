@@ -8,6 +8,9 @@ import { Payroll } from "@/models/Payroll";
 import policy from "@/lib/policy.json";
 import { GoogleGenAI } from "@google/genai";
 
+// Force dynamic so Next.js never tries to cache or statically render this streaming route
+export const dynamic = "force-dynamic";
+
 if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -161,6 +164,10 @@ ${policy.rules.map((r: string, i: number) => `${i + 1}. ${r}`).join("\n")}
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
         "X-Content-Type-Options": "nosniff",
+        // Prevent any proxy/CDN/Next.js layer from buffering the stream
+        "X-Accel-Buffering": "no",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
