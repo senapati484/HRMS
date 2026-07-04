@@ -7,6 +7,10 @@ import { Attendance } from "@/models/Attendance";
 import { Leave } from "@/models/Leave";
 import DashboardClient from "@/components/DashboardClient";
 
+function toPlain<T>(doc: T): T {
+  return JSON.parse(JSON.stringify(doc));
+}
+
 export default async function EmployeeDashboard() {
   const cookieStore = await cookies();
   const token = cookieStore.get("hrms_token")?.value;
@@ -36,7 +40,6 @@ export default async function EmployeeDashboard() {
     }).lean()
   ]);
 
-  // Fetch logged-in user's recent logs for the Personal Dashboard
   const [recentAttendanceRaw, recentLeavesRaw] = await Promise.all([
     Attendance.find({ userId: decoded.userId }).sort({ date: -1 }).limit(5).lean(),
     Leave.find({ userId: decoded.userId }).sort({ createdAt: -1 }).limit(5).lean()
@@ -53,7 +56,7 @@ export default async function EmployeeDashboard() {
       status = "Present";
     }
 
-    return {
+    return toPlain({
       ...u,
       _id: u._id.toString(),
       joinDate: u.joinDate ? u.joinDate.toISOString() : undefined,
@@ -63,24 +66,24 @@ export default async function EmployeeDashboard() {
         checkIn: att.checkIn ? att.checkIn.toISOString() : undefined,
         checkOut: att.checkOut ? att.checkOut.toISOString() : undefined,
       } : undefined
-    };
+    });
   });
 
-  const currentUserSerialized = {
+  const currentUserSerialized = toPlain({
     ...user,
     _id: user._id.toString(),
     joinDate: user.joinDate ? user.joinDate.toISOString() : undefined,
     dob: user.dob ? user.dob.toISOString() : undefined,
-  };
+  });
 
-  const recentAttendanceSerialized = recentAttendanceRaw.map((a: any) => ({
+  const recentAttendanceSerialized = recentAttendanceRaw.map((a: any) => toPlain({
     ...a,
     _id: a._id.toString(),
     checkIn: a.checkIn ? a.checkIn.toISOString() : undefined,
     checkOut: a.checkOut ? a.checkOut.toISOString() : undefined,
   }));
 
-  const recentLeavesSerialized = recentLeavesRaw.map((l: any) => ({
+  const recentLeavesSerialized = recentLeavesRaw.map((l: any) => toPlain({
     ...l,
     _id: l._id.toString(),
     startDate: l.startDate ? l.startDate.toISOString() : undefined,
