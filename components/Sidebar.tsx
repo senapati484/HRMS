@@ -18,6 +18,9 @@ import {
   Moon
 } from "lucide-react";
 
+import { useThemeStore } from "@/lib/store/themeStore";
+import { useUserStore } from "@/lib/store/userStore";
+
 interface NavItem {
   href: string;
   label: string;
@@ -58,26 +61,20 @@ function SidebarInner({ user }: SidebarProps) {
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
   const [collapsed, setCollapsed] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  
+  const { theme, initTheme, toggleTheme } = useThemeStore();
+  const setUser = useUserStore((s) => s.setUser);
 
   const isAdmin = user.role === "admin";
   const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
 
-  // Initialize theme from localStorage and enforce it in the DOM on mount
+  // Initialize theme and cache user in store
   useEffect(() => {
-    const savedTheme = (localStorage.getItem("theme") as "light" | "dark") || "dark";
-    setTheme(savedTheme);
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(savedTheme);
-  }, []);
-
-  function toggleTheme() {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(nextTheme);
-  }
+    initTheme();
+    if (user) {
+      setUser(user as any);
+    }
+  }, [user, setUser, initTheme]);
 
   const initials = user.name
     .split(" ")

@@ -35,6 +35,14 @@ export async function GET(
   }
 }
 
+import { z } from "zod";
+
+const payrollSchema = z.object({
+  basic: z.number().min(0).optional(),
+  allowances: z.number().min(0).optional(),
+  deductions: z.number().min(0).optional(),
+});
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> }
@@ -50,7 +58,12 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { basic, allowances, deductions } = body;
+    const parsed = payrollSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const { basic, allowances, deductions } = parsed.data;
 
     await connectDB();
 

@@ -38,6 +38,19 @@ export async function GET(
   }
 }
 
+import { z } from "zod";
+
+const userUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  role: z.enum(["employee", "admin"]).optional(),
+  department: z.string().optional(),
+  designation: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  profilePicture: z.string().url().or(z.literal("")).optional(),
+});
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -51,15 +64,21 @@ export async function PATCH(
     if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
+    const parsed = userUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const updatePayload = parsed.data;
 
     // Remove blocked fields from body regardless of caller
-    BLOCKED_FIELDS.forEach((f) => delete body[f]);
+    BLOCKED_FIELDS.forEach((f) => delete (updatePayload as any)[f]);
 
     let updateData: Record<string, unknown>;
 
     if (decoded.role === "admin") {
       // Admin can update any field (except blocked ones above)
-      updateData = body;
+      updateData = updatePayload;
     } else {
       // Employee: only their own profile, only whitelisted fields
       if (decoded.userId !== id) {
@@ -67,7 +86,7 @@ export async function PATCH(
       }
       updateData = {};
       EMPLOYEE_ALLOWED_FIELDS.forEach((field) => {
-        if (field in body) updateData[field] = body[field];
+        if (field in updatePayload) updateData[field] = (updatePayload as any)[field];
       });
     }
 
