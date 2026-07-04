@@ -2,6 +2,29 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-muted: var(--muted);
+  
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-border);
+  
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+}
+
 :root {
   /* LIGHT MODE */
   --background: #f8fafc;
@@ -35,29 +58,29 @@
 
 .dark {
   /* DARK MODE */
-  --background: #090c15;
-  --foreground: #f1f5f9;
-  --card: #111625;
-  --card-border: rgba(255, 255, 255, 0.05);
-  --sidebar: #0d101d;
-  --sidebar-border: rgba(255, 255, 255, 0.04);
+  --background: #090b14;
+  --foreground: #f8fafc;
+  --card: #131929;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --sidebar: #0f1524;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
   --primary: #6366f1;
   --primary-hover: #4f46e5;
   --accent: #a855f7;
   --muted: #94a3b8;
   
   /* Status variables - Dark Mode */
-  --success: #34d399;
-  --success-bg: rgba(52, 211, 153, 0.1);
-  --success-border: rgba(52, 211, 153, 0.15);
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.25);
   
-  --warning: #fbbf24;
-  --warning-bg: rgba(251, 191, 36, 0.1);
-  --warning-border: rgba(251, 191, 36, 0.15);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.25);
   
-  --danger: #f87171;
-  --danger-bg: rgba(248, 113, 113, 0.1);
-  --danger-border: rgba(248, 113, 113, 0.15);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-border: rgba(239, 68, 68, 0.25);
 }
 
 * {
@@ -83,7 +106,11 @@ h1, h2, h3, h4, .font-heading {
   font-family: var(--font-heading);
 }
 
-.font-precise, .font-mono {
+.font-precise {
+  font-family: var(--font-body);
+}
+
+.font-mono {
   font-family: var(--font-mono);
 }
 

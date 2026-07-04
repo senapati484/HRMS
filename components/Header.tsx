@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUserStore } from "@/lib/store/userStore";
-import { LogOut, User, Shield, Moon, Sun, Clock, Users, Calendar, Compass, CircleDollarSign } from "lucide-react";
+import { useDataStore } from "@/lib/store/dataStore";
+import { LogOut, User, Shield, Moon, Sun, Clock, Users, Calendar, Compass, CircleDollarSign, ShieldAlert, AlertTriangle } from "lucide-react";
 
 interface UserInfo {
   _id: string;
@@ -20,8 +21,23 @@ interface UserInfo {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab") || "dashboard";
+
   const user = useUserStore((s) => s.user);
   const fetchUser = useUserStore((s) => s.fetchUser);
+
+  const leavesObj = useDataStore((s) => s._leaves);
+  const anomaliesObj = useDataStore((s) => s._anomalies);
+  const leaves = leavesObj?.data ?? [];
+  const anomalies = anomaliesObj?.data ?? [];
+  const fetchAdminAll = useDataStore((s) => s.fetchAdminAll);
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchAdminAll();
+    }
+  }, [user, fetchAdminAll]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [attendance, setAttendance] = useState<any>(null);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
@@ -125,23 +141,30 @@ export default function Header() {
 
   const initials = user?.name ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "U";
 
+  const pendingLeavesCount = leaves.filter((l: any) => l.status === "Pending").length;
+  const anomaliesCount = anomalies.length;
+
   const tabs = user?.role === "admin"
     ? [
-        { label: "Overview", href: "/admin", icon: Shield },
+        { label: "Overview", href: "/admin?tab=dashboard", icon: ShieldAlert },
         { label: "Employees", href: "/admin?tab=employees", icon: Users },
-        { label: "Leave Requests", href: "/admin?tab=leaves", icon: Compass },
-        { label: "Anomalies", href: "/admin?tab=anomalies", icon: Clock },
-        { label: "Payroll", href: "/admin?tab=payroll", icon: CircleDollarSign },
+        { label: "Pending Leaves", href: "/admin?tab=leaves", icon: Compass, badge: pendingLeavesCount },
+        { label: "Anomaly Alerts", href: "/admin?tab=anomalies", icon: AlertTriangle, badge: anomaliesCount, badgeType: "danger" },
+        { label: "Payroll Manager", href: "/admin?tab=payroll", icon: CircleDollarSign },
       ]
     : [
         { label: "Dashboard", href: "/dashboard", icon: Users },
         { label: "Attendance", href: "/attendance", icon: Calendar },
         { label: "Time Off", href: "/leave", icon: Compass },
+        { label: "Payroll", href: "/payroll", icon: CircleDollarSign },
       ];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors"
-      style={{ background: "var(--card-header-bg, rgba(255, 255, 255, 0.8))", borderColor: "var(--card-border)" }}>
+      style={{
+        background: theme === "dark" ? "rgba(15, 21, 36, 0.85)" : "rgba(255, 255, 255, 0.8)",
+        borderColor: theme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(226, 232, 240, 0.8)"
+      }}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         {/* Left: Branding & Navigation */}
         <div className="flex items-center gap-8">
@@ -164,7 +187,11 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-1.5">
             {tabs.map((tab) => {
               const baseHref = tab.href.split("?")[0];
-              const active = pathname === baseHref;
+              const active = pathname === baseHref && (
+                !tab.href.includes("?tab=")
+                  ? currentTab === "dashboard"
+                  : tab.href.includes(`tab=${currentTab}`)
+              );
               const Icon = tab.icon;
               return (
                 <Link
@@ -177,7 +204,17 @@ export default function Header() {
                   }}
                 >
                   <Icon size={16} />
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  {tab.badge !== undefined && tab.badge > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                      style={{
+                        background: tab.badgeType === "danger" ? "var(--danger-bg)" : "rgba(99, 102, 241, 0.15)",
+                        color: tab.badgeType === "danger" ? "var(--danger)" : "var(--primary)",
+                      }}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
                   {active && (
                     <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-indigo-500" />
                   )}

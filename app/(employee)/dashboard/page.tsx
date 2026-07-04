@@ -46,8 +46,8 @@ export default async function EmployeeDashboard() {
   ]);
 
   const employeesMapped = usersRaw.map((u: any) => {
-    const att = attendancesRaw.find((a: any) => a.userId.toString() === u._id.toString());
-    const leave = leavesRaw.find((l: any) => l.userId.toString() === u._id.toString());
+    const att = attendancesRaw.find((a: any) => a.userId && a.userId.toString() === u._id.toString());
+    const leave = leavesRaw.find((l: any) => l.userId && l.userId.toString() === u._id.toString());
 
     let status: "Present" | "Leave" | "Absent" = "Absent";
     if (leave) {

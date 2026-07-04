@@ -15,7 +15,8 @@ import {
   ArrowRight,
   User,
   Inbox,
-  DollarSign
+  DollarSign,
+  LayoutDashboard
 } from "lucide-react";
 
 interface UserType {
@@ -307,6 +308,14 @@ function AdminDashboard() {
 
   const pendingLeaves = leaves.filter((l) => l.status === "Pending");
 
+  const adminTabs = [
+    { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+    { id: "employees", label: "Employees", icon: Users },
+    { id: "leaves", label: "Pending Leaves", icon: Palmtree, badge: pendingLeaves.length },
+    { id: "anomalies", label: "Anomaly Alerts", icon: AlertTriangle, badge: anomalies.length, badgeType: "danger" },
+    { id: "payroll", label: "Payroll Manager", icon: CircleDollarSign },
+  ];
+
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto text-foreground">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -328,6 +337,8 @@ function AdminDashboard() {
           Administrator Account
         </span>
       </div>
+
+
 
       <div>
         {activeTab === "dashboard" && (
