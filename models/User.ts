@@ -33,6 +33,11 @@ export interface IUser extends Document {
     pan?: string;
     uan?: string;
   };
+  documents?: {
+    name: string;
+    url: string;
+    uploadedAt?: Date;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +76,13 @@ const UserSchema = new Schema<IUser>(
       pan: { type: String },
       uan: { type: String },
     },
+    documents: [
+      {
+        name: { type: String, required: true },
+        url: { type: String, required: true },
+        uploadedAt: { type: Date, default: Date.now },
+      }
+    ],
   },
   { timestamps: true }
 );

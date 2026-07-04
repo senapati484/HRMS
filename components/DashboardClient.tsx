@@ -4,7 +4,7 @@ import { useState } from "react";
 import { 
   Search, Plus, X, Mail, Phone, Calendar, Shield, Award, 
   BookOpen, Briefcase, DollarSign, Lock, AlertCircle, 
-  Check, Plane, Landmark, Eye, Heart, Compass
+  Check, Plane, Landmark, Eye, Heart, Compass, FileText, User as UserIcon, Clock
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -40,6 +40,11 @@ interface User {
     pan?: string;
     uan?: string;
   };
+  documents?: {
+    name: string;
+    url: string;
+    uploadedAt?: string;
+  }[];
   status?: "Present" | "Leave" | "Absent";
   attendanceToday?: {
     checkIn?: string;
@@ -50,15 +55,27 @@ interface User {
 interface DashboardClientProps {
   currentUser: User;
   initialEmployees: User[];
+  recentAttendance?: any[];
+  recentLeaves?: any[];
 }
 
-export default function DashboardClient({ currentUser, initialEmployees }: DashboardClientProps) {
+export default function DashboardClient({ 
+  currentUser, 
+  initialEmployees,
+  recentAttendance = [],
+  recentLeaves = []
+}: DashboardClientProps) {
   const router = useRouter();
   const [employees, setEmployees] = useState<User[]>(initialEmployees);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmp, setSelectedEmp] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<"resume" | "private" | "salary" | "security">("resume");
+  const [activeTab, setActiveTab] = useState<"resume" | "private" | "documents" | "salary">("resume");
   
+  const isAdmin = currentUser.role === "admin";
+  
+  // Tab toggle between "dashboard" and "employees" directory (default to dashboard for employees, directory for admins)
+  const [viewMode, setViewMode] = useState<"dashboard" | "employees">(isAdmin ? "employees" : "dashboard");
+
   // Add Employee Form States
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addForm, setAddForm] = useState({
@@ -81,6 +98,10 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
   // Skills/Cert Tags Temp States
   const [newSkill, setNewSkill] = useState("");
   const [newCert, setNewCert] = useState("");
+
+  // Documents temp states
+  const [newDocName, setNewDocName] = useState("");
+  const [newDocUrl, setNewDocUrl] = useState("");
 
   // Salary states
   const [salaryInfo, setSalaryInfo] = useState<any>(null);
@@ -143,9 +164,11 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
       const resEmp = await fetch("/api/users");
       if (resEmp.ok) {
         const dataEmp = await resEmp.json();
-        // Recalculate statuses locally (or just trigger router.refresh)
-        router.refresh();
+        if (dataEmp.users) {
+          setEmployees(dataEmp.users);
+        }
       }
+      router.refresh();
     } catch (err) {
       setAddError("Something went wrong. Please try again.");
     } finally {
@@ -240,12 +263,235 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
     });
   };
 
-  const isOwnProfile = selectedEmp?._id === currentUser._id;
-  const isAdmin = currentUser.role === "admin";
-  const canEditProfile = isOwnProfile;
+  // Helper setter functions
+  function setFormAndEdit(payload: Partial<User>) {
+    if (!editForm) return;
+    setEditForm({ ...editForm, ...payload });
+  }
 
+  function setBankDetailField(key: string, val: string) {
+    if (!editForm) return;
+    setEditForm({
+      ...editForm,
+      bankDetails: {
+        ...(editForm.bankDetails || {}),
+        [key]: val
+      }
+    });
+  }
+
+  function handleWageChange(wage: number) {
+    if (!salaryInfo) return;
+    
+    // Auto-calculate components in real-time on UI
+    const basic = Math.round(wage * 0.5 * 100) / 100;
+    const hra = Math.round(basic * 0.5 * 100) / 100;
+    const standardAllowance = Math.round(wage * 0.0833 * 100) / 100;
+    const performanceBonus = Math.round(wage * 0.0833 * 100) / 100;
+    const leaveTravelAllowance = Math.round(wage * 0.0833 * 100) / 100;
+    
+    const sumOther = basic + hra + standardAllowance + performanceBonus + leaveTravelAllowance;
+    const fixedAllowance = Math.max(0, Math.round((wage - sumOther) * 100) / 100);
+
+    const employeePF = Math.round(basic * 0.12 * 100) / 100;
+    const employerPF = Math.round(basic * 0.12 * 100) / 100;
+
+    setSalaryInfo({
+      ...salaryInfo,
+      monthlyWage: wage,
+      basic,
+      hra,
+      standardAllowance,
+      performanceBonus,
+      leaveTravelAllowance,
+      fixedAllowance,
+      employeePF,
+      employerPF,
+      allowances: hra + standardAllowance + performanceBonus + leaveTravelAllowance + fixedAllowance,
+      deductions: employeePF + 200
+    });
+  }
+
+  const isOwnProfile = selectedEmp?._id === currentUser._id;
+  const canEditProfile = isOwnProfile || isAdmin;
+
+  // -------------------------------------------------------------
+  // RENDERING EMPLOYEE DASHBOARD (Welcome page)
+  // -------------------------------------------------------------
+  if (viewMode === "dashboard" && !isAdmin) {
+    return (
+      <div className="p-6 space-y-6 max-w-6xl mx-auto text-foreground animate-in fade-in duration-300">
+        {/* Toggle headers */}
+        <div className="flex border-b" style={{ borderColor: "var(--card-border)" }}>
+          <button
+            onClick={() => setViewMode("dashboard")}
+            className="px-6 py-3 text-xs font-bold border-b-2 cursor-pointer transition-all"
+            style={{
+              color: "var(--primary)",
+              borderBottomColor: "var(--primary)"
+            }}
+          >
+            My Dashboard
+          </button>
+          <button
+            onClick={() => setViewMode("employees")}
+            className="px-6 py-3 text-xs font-bold border-b-2 cursor-pointer transition-all"
+            style={{
+              color: "var(--muted)",
+              borderBottomColor: "transparent"
+            }}
+          >
+            Directory (Employees)
+          </button>
+        </div>
+
+        {/* Welcome Greeting Banner */}
+        <div className="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.05), rgba(168,85,247,0.05))", border: "1px solid var(--card-border)" }}>
+          <div>
+            <h1 className="text-xl md:text-2xl font-extrabold text-foreground tracking-tight font-precise">
+              Welcome back, {currentUser.name}!
+            </h1>
+            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+              {currentUser.designation || "Employee"} · {currentUser.department || "No Department"} · {currentUser.companyName || "Acme Corp"}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-indigo-500/10 text-indigo-400 font-mono">
+              ID: {currentUser.employeeId}
+            </span>
+            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-green-500/10 text-green-400 font-precise">
+              Active Session
+            </span>
+          </div>
+        </div>
+
+        {/* Quick Access Portal Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "My Profile", desc: "View and edit resume details", link: "/profile", icon: <UserIcon size={20} className="text-indigo-400" /> },
+            { label: "Attendance Logs", desc: "Check daily check-in timesheets", link: "/attendance", icon: <Clock size={20} className="text-emerald-400" /> },
+            { label: "Time Off Requests", desc: "Submit and review leave applications", link: "/leave", icon: <Plane size={20} className="text-blue-400" /> },
+            { label: "My Salary & Payslip", desc: "View wage breakdown structures", link: "/payroll", icon: <DollarSign size={20} className="text-amber-400" /> },
+          ].map((card, idx) => (
+            <div
+              key={idx}
+              onClick={() => router.push(card.link)}
+              className="rounded-2xl p-5 border cursor-pointer hover:border-indigo-500/40 hover:-translate-y-1 transition-all duration-300 glass-panel flex flex-col justify-between"
+              style={{ borderColor: "var(--card-border)" }}
+            >
+              <div className="p-2.5 bg-slate-500/5 rounded-xl border w-fit" style={{ borderColor: "var(--card-border)" }}>
+                {card.icon}
+              </div>
+              <div className="mt-5">
+                <h3 className="font-bold text-foreground text-sm font-precise">{card.label}</h3>
+                <p className="text-[10px] mt-1 line-clamp-1" style={{ color: "var(--muted)" }}>{card.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent logs activity feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Attendance */}
+          <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
+            <h3 className="font-bold text-foreground text-sm mb-4 flex items-center gap-2">
+              <Clock size={16} className="text-emerald-400" /> Recent Attendance Logs
+            </h3>
+            <div className="divide-y divide-black/5 dark:divide-white/5">
+              {recentAttendance.map((att) => (
+                <div key={att._id} className="py-3 flex justify-between items-center text-xs">
+                  <div>
+                    <div className="font-bold text-foreground">
+                      {new Date(att.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                    </div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                      {att.checkIn ? `In: ${new Date(att.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                      {att.checkOut ? ` · Out: ${new Date(att.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wider`}
+                    style={{
+                      background: att.status === "Present" ? "var(--success-bg)" : "var(--danger-bg)",
+                      color: att.status === "Present" ? "var(--success)" : "var(--danger)",
+                      borderColor: att.status === "Present" ? "var(--success-border)" : "var(--danger-border)"
+                    }}>
+                    {att.status}
+                  </span>
+                </div>
+              ))}
+              {recentAttendance.length === 0 && (
+                <div className="text-center py-8 text-xs text-muted italic">No recent attendance records.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Leaves */}
+          <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
+            <h3 className="font-bold text-foreground text-sm mb-4 flex items-center gap-2">
+              <Plane size={16} className="text-blue-400" /> Recent Leave Requests
+            </h3>
+            <div className="divide-y divide-black/5 dark:divide-white/5">
+              {recentLeaves.map((l) => (
+                <div key={l._id} className="py-3 flex justify-between items-start text-xs">
+                  <div>
+                    <div className="font-bold text-foreground">{l.leaveType} Leave</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                      {new Date(l.startDate).toLocaleDateString("en-IN")} – {new Date(l.endDate).toLocaleDateString("en-IN")}
+                    </div>
+                    {l.remarks && <p className="text-[10px] mt-1 text-slate-400 italic">"{l.remarks}"</p>}
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border uppercase tracking-wider`}
+                    style={{
+                      background: l.status === "Approved" ? "var(--success-bg)" : l.status === "Rejected" ? "var(--danger-bg)" : "var(--warning-bg)",
+                      color: l.status === "Approved" ? "var(--success)" : l.status === "Rejected" ? "var(--danger)" : "var(--warning)",
+                      borderColor: l.status === "Approved" ? "var(--success-border)" : l.status === "Rejected" ? "var(--danger-border)" : "var(--warning-border)"
+                    }}>
+                    {l.status}
+                  </span>
+                </div>
+              ))}
+              {recentLeaves.length === 0 && (
+                <div className="text-center py-8 text-xs text-muted italic">No recent leave requests.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // RENDERING DIRECTORY GRID (For Admin, and toggle-able for Employee)
+  // -------------------------------------------------------------
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-foreground">
+      {/* Toggle headers for Employee */}
+      {!isAdmin && (
+        <div className="flex border-b mb-4" style={{ borderColor: "var(--card-border)" }}>
+          <button
+            onClick={() => setViewMode("dashboard")}
+            className="px-6 py-3 text-xs font-bold border-b-2 cursor-pointer transition-all"
+            style={{
+              color: "var(--muted)",
+              borderBottomColor: "transparent"
+            }}
+          >
+            My Dashboard
+          </button>
+          <button
+            onClick={() => setViewMode("employees")}
+            className="px-6 py-3 text-xs font-bold border-b-2 cursor-pointer transition-all"
+            style={{
+              color: "var(--primary)",
+              borderBottomColor: "var(--primary)"
+            }}
+          >
+            Directory (Employees)
+          </button>
+        </div>
+      )}
+
       {/* Header action bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -412,6 +658,7 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                 {[
                   { id: "resume", label: "Resume" },
                   { id: "private", label: "Private Info" },
+                  { id: "documents", label: "Documents" },
                   ...(isAdmin || isOwnProfile ? [{ id: "salary", label: "Salary Info" }] : []),
                 ].map(t => (
                   <button
@@ -542,7 +789,7 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                       <button
                         type="submit"
                         disabled={savingProfile}
-                        className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer"
+                        className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer animate-none"
                         style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
                       >
                         {savingProfile ? "Saving..." : "Save Resume Changes"}
@@ -599,7 +846,7 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                             disabled={!canEditProfile}
                             value={editForm.gender || ""}
                             onChange={e => setFormAndEdit({ gender: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border disabled:opacity-75 cursor-pointer"
+                            className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border cursor-pointer disabled:opacity-75"
                             style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                           >
                             <option value="">Select Gender</option>
@@ -614,7 +861,7 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                             disabled={!canEditProfile}
                             value={editForm.maritalStatus || ""}
                             onChange={e => setFormAndEdit({ maritalStatus: e.target.value })}
-                            className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border disabled:opacity-75 cursor-pointer"
+                            className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border cursor-pointer disabled:opacity-75"
                             style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                           >
                             <option value="">Select Status</option>
@@ -680,7 +927,103 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                   </form>
                 )}
 
-                {/* 3. SALARY INFO TAB */}
+                {/* 3. DOCUMENTS TAB */}
+                {activeTab === "documents" && (
+                  <form onSubmit={handleSaveProfile} className="space-y-6">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3 flex items-center gap-1.5">
+                        <FileText size={14} /> Shared Documents
+                      </h4>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                        {(editForm.documents || []).map((doc: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-500/5 rounded-xl border border-slate-500/10 text-xs">
+                            <div className="font-bold text-foreground truncate max-w-xs">{doc.name}</div>
+                            <div className="flex gap-3 items-center">
+                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-semibold hover:underline">Open Link</a>
+                              {canEditProfile && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const filtered = (editForm.documents || []).filter((_: any, i: number) => i !== idx);
+                                    setEditForm({ ...editForm, documents: filtered });
+                                  }}
+                                  className="text-red-400 font-bold hover:text-red-300 cursor-pointer"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {(editForm.documents || []).length === 0 && (
+                          <div className="text-center py-6 text-xs text-muted italic">No documents linked yet.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {canEditProfile && (
+                      <div className="border-t pt-5 space-y-4" style={{ borderColor: "var(--card-border)" }}>
+                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted">Add New Document URL</h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-semibold mb-1 text-muted">Document Name</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Identity Proof / Resume"
+                              value={newDocName}
+                              onChange={e => setNewDocName(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
+                              style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-semibold mb-1 text-muted">Document URL</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. https://..."
+                              value={newDocUrl}
+                              onChange={e => setNewDocUrl(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
+                              style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const name = newDocName.trim();
+                            const url = newDocUrl.trim();
+                            if (name && url) {
+                              const currentDocs = editForm.documents || [];
+                              setEditForm({
+                                ...editForm,
+                                documents: [...currentDocs, { name, url, uploadedAt: new Date().toISOString() }]
+                              });
+                              setNewDocName("");
+                              setNewDocUrl("");
+                            }
+                          }}
+                          className="px-4 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer"
+                        >
+                          Add Document Link
+                        </button>
+                      </div>
+                    )}
+
+                    {canEditProfile && (
+                      <button
+                        type="submit"
+                        disabled={savingProfile}
+                        className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer"
+                        style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
+                      >
+                        {savingProfile ? "Saving..." : "Save Documents Changes"}
+                      </button>
+                    )}
+                  </form>
+                )}
+
+                {/* 4. SALARY INFO TAB */}
                 {activeTab === "salary" && (
                   <div className="space-y-6">
                     {loadingSalary ? (
@@ -698,60 +1041,35 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                         {/* Configurable base wage */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--muted)" }}>Month Wage (INR)</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>Monthly Base Wage (₹)</label>
                             <input
                               type="number"
                               disabled={!isAdmin}
                               value={salaryInfo.monthlyWage || ""}
-                              onChange={e => handleWageChange(Number(e.target.value))}
-                              className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border disabled:opacity-75 font-semibold"
+                              onChange={e => handleWageChange(parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-2.5 rounded-xl text-xs font-mono font-bold text-foreground outline-none border disabled:opacity-75"
                               style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                             />
                           </div>
+
                           <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--muted)" }}>Year Wage (INR)</label>
-                            <input
-                              type="text"
-                              disabled
-                              value={`₹${(salaryInfo.monthlyWage * 12).toLocaleString("en-IN")}`}
-                              className="w-full px-4 py-2.5 rounded-xl text-xs text-muted outline-none border bg-slate-500/5"
-                              style={{ borderColor: "var(--card-border)" }}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold mb-1" style={{ color: "var(--muted)" }}>No. of working days in a week</label>
-                            <input
-                              type="number"
-                              disabled={!isAdmin}
-                              value={salaryInfo.workingDaysPerWeek || 5}
-                              onChange={e => setSalaryInfo({ ...salaryInfo, workingDaysPerWeek: Number(e.target.value) })}
-                              className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border disabled:opacity-75"
-                              style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-semibold mb-1" style={{ color: "var(--muted)" }}>Break Time (hrs)</label>
-                            <input
-                              type="number"
-                              disabled={!isAdmin}
-                              value={salaryInfo.breakTime || 1}
-                              onChange={e => setSalaryInfo({ ...salaryInfo, breakTime: Number(e.target.value) })}
-                              className="w-full px-4 py-2 rounded-xl text-xs text-foreground outline-none border disabled:opacity-75"
-                              style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
-                            />
+                            <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--muted)" }}>Yearly Wage (₹)</label>
+                            <div className="px-4 py-2.5 border rounded-xl font-bold font-mono text-xs text-foreground bg-slate-500/5" style={{ borderColor: "var(--card-border)" }}>
+                              ₹{((salaryInfo.monthlyWage || 0) * 12).toLocaleString("en-IN")}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Salary components details table */}
+                        {/* Breakdown structure display list */}
                         <div className="border-t pt-5" style={{ borderColor: "var(--card-border)" }}>
                           <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3 flex items-center gap-1.5">
-                            <DollarSign size={14} /> Salary Components Breakdown
+                            <DollarSign size={14} /> Component Breakdown
                           </h4>
-                          <div className="rounded-xl border overflow-hidden text-xs" style={{ borderColor: "var(--card-border)" }}>
-                            <div className="grid grid-cols-3 bg-slate-500/5 p-3 font-semibold border-b uppercase text-[10px] tracking-wider" style={{ borderColor: "var(--card-border)", color: "var(--muted)" }}>
+                          <div className="rounded-xl border overflow-hidden text-[11px]" style={{ borderColor: "var(--card-border)" }}>
+                            <div className="grid grid-cols-3 bg-slate-500/5 p-2.5 font-semibold border-b uppercase text-[10px] tracking-wider" style={{ borderColor: "var(--card-border)", color: "var(--muted)" }}>
                               <span>Component</span>
-                              <span>Percentage</span>
-                              <span className="text-right">Computed Amount</span>
+                              <span>Percentage / Basis</span>
+                              <span className="text-right">Amount</span>
                             </div>
                             <div className="divide-y divide-slate-100 dark:divide-white/5">
                               {[
@@ -759,20 +1077,20 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                                 { name: "House Rent Allowance (HRA)", pct: "50% of Basic", val: salaryInfo.hra },
                                 { name: "Standard Allowance", pct: "8.33% of Wage", val: salaryInfo.standardAllowance },
                                 { name: "Performance Bonus", pct: "8.33% of Wage", val: salaryInfo.performanceBonus },
-                                { name: "Leave Travel Allowance", pct: "8.33% of Wage", val: salaryInfo.leaveTravelAllowance },
+                                { name: "Leave Travel Allowance (LTA)", pct: "8.33% of Wage", val: salaryInfo.leaveTravelAllowance },
                                 { name: "Fixed Allowance", pct: "Remainder of Wage", val: salaryInfo.fixedAllowance },
                               ].map((comp, idx) => (
-                                <div key={idx} className="grid grid-cols-3 p-3 text-foreground font-medium">
+                                <div key={idx} className="grid grid-cols-3 p-2.5 text-foreground font-medium">
                                   <span>{comp.name}</span>
                                   <span style={{ color: "var(--muted)" }}>{comp.pct}</span>
-                                  <span className="text-right font-bold font-mono">₹{comp.val?.toLocaleString("en-IN")}</span>
+                                  <span className="text-right font-bold font-mono text-foreground">₹{comp.val?.toLocaleString("en-IN")}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         </div>
 
-                        {/* PF and Tax contribution details */}
+                        {/* PF and professional tax deductions breakdown */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t pt-5" style={{ borderColor: "var(--card-border)" }}>
                           <div>
                             <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Provident Fund (PF)</h4>
@@ -789,7 +1107,7 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
                           </div>
 
                           <div>
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Deductions & Taxes</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mb-3">Deductions</h4>
                             <div className="space-y-2 text-xs">
                               <div className="flex justify-between p-2 rounded-lg bg-slate-500/5">
                                 <span style={{ color: "var(--muted)" }}>Professional Tax</span>
@@ -923,53 +1241,4 @@ export default function DashboardClient({ currentUser, initialEmployees }: Dashb
       )}
     </div>
   );
-
-  // Helper setter functions
-  function setFormAndEdit(payload: Partial<User>) {
-    if (!editForm) return;
-    setEditForm({ ...editForm, ...payload });
-  }
-
-  function setBankDetailField(key: string, val: string) {
-    if (!editForm) return;
-    setEditForm({
-      ...editForm,
-      bankDetails: {
-        ...(editForm.bankDetails || {}),
-        [key]: val
-      }
-    });
-  }
-
-  function handleWageChange(wage: number) {
-    if (!salaryInfo) return;
-    
-    // Auto-calculate components in real-time on UI
-    const basic = Math.round(wage * 0.5 * 100) / 100;
-    const hra = Math.round(basic * 0.5 * 100) / 100;
-    const standardAllowance = Math.round(wage * 0.0833 * 100) / 100;
-    const performanceBonus = Math.round(wage * 0.0833 * 100) / 100;
-    const leaveTravelAllowance = Math.round(wage * 0.0833 * 100) / 100;
-    
-    const sumOther = basic + hra + standardAllowance + performanceBonus + leaveTravelAllowance;
-    const fixedAllowance = Math.max(0, Math.round((wage - sumOther) * 100) / 100);
-
-    const employeePF = Math.round(basic * 0.12 * 100) / 100;
-    const employerPF = Math.round(basic * 0.12 * 100) / 100;
-
-    setSalaryInfo({
-      ...salaryInfo,
-      monthlyWage: wage,
-      basic,
-      hra,
-      standardAllowance,
-      performanceBonus,
-      leaveTravelAllowance,
-      fixedAllowance,
-      employeePF,
-      employerPF,
-      allowances: hra + standardAllowance + performanceBonus + leaveTravelAllowance + fixedAllowance,
-      deductions: employeePF + 200
-    });
-  }
 }

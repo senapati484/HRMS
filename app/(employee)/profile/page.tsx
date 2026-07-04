@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { 
   User as UserIcon, Mail, Phone, Calendar, Landmark, 
-  Award, BookOpen, Briefcase, DollarSign, Lock, AlertCircle 
+  Award, BookOpen, Briefcase, DollarSign, Lock, AlertCircle, FileText
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -37,6 +37,11 @@ interface User {
     pan?: string;
     uan?: string;
   };
+  documents?: {
+    name: string;
+    url: string;
+    uploadedAt?: string;
+  }[];
 }
 
 export default function ProfilePage() {
@@ -44,12 +49,16 @@ export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<User | null>(null);
   const [salaryInfo, setSalaryInfo] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"resume" | "private" | "salary" | "security">("resume");
+  const [activeTab, setActiveTab] = useState<"resume" | "private" | "documents" | "salary" | "security">("resume");
   const [loading, setLoading] = useState(true);
 
   // Skills/Cert Tags Temp States
   const [newSkill, setNewSkill] = useState("");
   const [newCert, setNewCert] = useState("");
+
+  // Documents Temp States
+  const [newDocName, setNewDocName] = useState("");
+  const [newDocUrl, setNewDocUrl] = useState("");
 
   // Save states
   const [saving, setSaving] = useState(false);
@@ -121,7 +130,6 @@ export default function ProfilePage() {
     setPassLoading(true);
     setPassMsg("");
     try {
-      // Patch route on users for changing password
       const res = await fetch(`/api/users/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -221,7 +229,7 @@ export default function ProfilePage() {
                 value={editForm.phone || ""}
                 onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
                 placeholder="Add Phone Number"
-                className="bg-transparent border-0 outline-none w-full text-foreground"
+                className="bg-transparent border-0 outline-none w-full text-foreground font-semibold"
               />
             </div>
             <div className="flex items-center gap-2.5">
@@ -238,6 +246,7 @@ export default function ProfilePage() {
             {[
               { id: "resume", label: "Resume" },
               { id: "private", label: "Private Info" },
+              { id: "documents", label: "Documents" },
               { id: "salary", label: "Salary Info" },
               { id: "security", label: "Security" },
             ].map(t => (
@@ -323,7 +332,7 @@ export default function ProfilePage() {
                       className="flex-1 px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
                       style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                     />
-                    <button type="button" onClick={() => addTag("skills")} className="px-3 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold text-white hover:bg-indigo-700">Add</button>
+                    <button type="button" onClick={() => addTag("skills")} className="px-3 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer">Add</button>
                   </div>
                 </div>
 
@@ -349,14 +358,14 @@ export default function ProfilePage() {
                       className="flex-1 px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
                       style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
                     />
-                    <button type="button" onClick={() => addTag("certifications")} className="px-3 py-1.5 bg-emerald-600 rounded-lg text-xs font-bold text-white hover:bg-emerald-700">Add</button>
+                    <button type="button" onClick={() => addTag("certifications")} className="px-3 py-1.5 bg-emerald-600 rounded-lg text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer">Add</button>
                   </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer animate-none"
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer"
                   style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
                 >
                   {saving ? "Saving..." : "Save Resume Changes"}
@@ -491,7 +500,97 @@ export default function ProfilePage() {
               </form>
             )}
 
-            {/* 3. SALARY INFO TAB (View-only for employee) */}
+            {/* 3. DOCUMENTS TAB */}
+            {activeTab === "documents" && (
+              <form onSubmit={handleSaveProfile} className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-3 flex items-center gap-1.5">
+                    <FileText size={14} /> Shared Documents
+                  </h4>
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                    {(editForm.documents || []).map((doc: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-500/5 rounded-xl border border-slate-500/10 text-xs">
+                        <div className="font-bold text-foreground truncate max-w-xs">{doc.name}</div>
+                        <div className="flex gap-3 items-center">
+                          <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-semibold hover:underline">Open Link</a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const filtered = (editForm.documents || []).filter((_: any, i: number) => i !== idx);
+                              setEditForm({ ...editForm, documents: filtered });
+                            }}
+                            className="text-red-400 font-bold hover:text-red-300 cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {(editForm.documents || []).length === 0 && (
+                      <div className="text-center py-6 text-xs text-muted italic">No documents linked yet.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t pt-5 space-y-4" style={{ borderColor: "var(--card-border)" }}>
+                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted">Add New Document URL</h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold mb-1 text-muted">Document Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Identity Proof / Resume"
+                        value={newDocName}
+                        onChange={e => setNewDocName(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
+                        style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold mb-1 text-muted">Document URL</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. https://..."
+                        value={newDocUrl}
+                        onChange={e => setNewDocUrl(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg text-xs text-foreground outline-none border"
+                        style={{ background: "var(--background)", borderColor: "var(--card-border)" }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = newDocName.trim();
+                      const url = newDocUrl.trim();
+                      if (name && url) {
+                        const currentDocs = editForm.documents || [];
+                        setEditForm({
+                          ...editForm,
+                          documents: [...currentDocs, { name, url, uploadedAt: new Date().toISOString() }]
+                        });
+                        setNewDocName("");
+                        setNewDocUrl("");
+                      }
+                    }}
+                    className="px-4 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer"
+                  >
+                    Add Document Link
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-60 cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
+                >
+                  {saving ? "Saving..." : "Save Documents Changes"}
+                </button>
+              </form>
+            )}
+
+            {/* 4. SALARY INFO TAB (View-only for employee) */}
             {activeTab === "salary" && (
               <div className="space-y-6">
                 {!salaryInfo ? (
@@ -579,7 +678,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* 4. SECURITY TAB (Password Change) */}
+            {/* 5. SECURITY TAB (Password Change) */}
             {activeTab === "security" && (
               <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-sm">
                 {passMsg && (

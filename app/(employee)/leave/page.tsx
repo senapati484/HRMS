@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import CopilotAsk from "@/components/CopilotAsk";
-import { Palmtree, Clock, Calendar, Check, X, FileText, CheckCircle2, Inbox } from "lucide-react";
+import { Palmtree, Clock, Calendar, Check, X, FileText, CheckCircle2, Inbox, ChevronLeft, ChevronRight, RefreshCw, Plane } from "lucide-react";
 
 interface LeaveRequest {
   _id: string;
@@ -58,6 +58,12 @@ export default function LeavePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
 
+  // Month navigation state for the calendar view
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  // Date selection states from calendar clicking
+  const [selectionRange, setSelectionRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
+
   // Admin decision states
   const [hrComments, setHrComments] = useState<Record<string, string>>({});
   const [decisionLoading, setDecisionLoading] = useState<string | null>(null);
@@ -110,6 +116,10 @@ export default function LeavePage() {
         remarks: data.remarks || "",
       });
       setConfidence(data.confidence);
+      
+      if (data.startDate) {
+        setSelectionRange({ start: data.startDate, end: data.endDate || data.startDate });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -136,6 +146,7 @@ export default function LeavePage() {
       setForm({ leaveType: "Paid", startDate: "", endDate: "", remarks: "" });
       setNlInput("");
       setConfidence(null);
+      setSelectionRange({ start: null, end: null });
       await fetchLeaves();
     } catch (err) {
       setSubmitMsg("Something went wrong. Please try again.");
@@ -155,7 +166,6 @@ export default function LeavePage() {
         body: JSON.stringify({ status, hrComment }),
       });
       if (res.ok) {
-        // Clear comment for this specific request
         setHrComments(prev => {
           const next = { ...prev };
           delete next[leaveId];
@@ -169,6 +179,70 @@ export default function LeavePage() {
       setDecisionLoading(null);
     }
   }
+
+  // Calendar Day Click Range Handler
+  const handleCalendarDayClick = (dateStr: string) => {
+    if (!selectionRange.start || (selectionRange.start && selectionRange.end)) {
+      // Start a new selection
+      setSelectionRange({ start: dateStr, end: null });
+      setForm(f => ({ ...f, startDate: dateStr, endDate: dateStr }));
+    } else {
+      // Complete selection range
+      const startD = new Date(selectionRange.start);
+      const clickedD = new Date(dateStr);
+      
+      if (clickedD >= startD) {
+        setSelectionRange({ ...selectionRange, end: dateStr });
+        setForm(f => ({ ...f, endDate: dateStr }));
+      } else {
+        // Reset start to clicked date
+        setSelectionRange({ start: dateStr, end: null });
+        setForm(f => ({ ...f, startDate: dateStr, endDate: dateStr }));
+      }
+    }
+  };
+
+  const adjustCalendarMonth = (offset: number) => {
+    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + offset, 1));
+  };
+
+  // Build Calendar grid cells
+  const getCalendarCells = () => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+
+    const startOfMonth = new Date(year, month, 1);
+    const numDays = new Date(year, month + 1, 0).getDate();
+    const startDayIndex = startOfMonth.getDay();
+
+    const cells: { dateStr: string; dayNum: number; status?: string }[] = [];
+
+    // offset
+    for (let i = 0; i < startDayIndex; i++) {
+      cells.push({ dateStr: "", dayNum: 0 });
+    }
+
+    // days
+    for (let day = 1; day <= numDays; day++) {
+      const d = new Date(year, month, day);
+      const dateStr = d.toISOString().split("T")[0];
+
+      // Find status based on approved leave requests
+      const matchingApprovedLeave = leaves.find(l => 
+        l.status === "Approved" && 
+        new Date(l.startDate) <= new Date(dateStr + "T23:59:59") && 
+        new Date(l.endDate) >= new Date(dateStr + "T00:00:00")
+      );
+
+      cells.push({ 
+        dateStr, 
+        dayNum: day, 
+        status: matchingApprovedLeave ? "ApprovedLeave" : undefined 
+      });
+    }
+
+    return cells;
+  };
 
   const inputBorder = (field: keyof ParsedLeave["confidence"]) => {
     if (!confidence) return "1px solid var(--card-border)";
@@ -186,7 +260,7 @@ export default function LeavePage() {
   const isAdmin = currentUser.role === "admin";
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto text-foreground">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto text-foreground animate-in fade-in duration-300">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Time Off</h1>
@@ -282,7 +356,7 @@ export default function LeavePage() {
           </div>
         </div>
       ) : (
-        /* EMPLOYEE VIEW: Balance Allocation, Form, and Personal Requests Log */
+        /* EMPLOYEE VIEW: Balance Allocation, Form, and Calendar Selector + Request logs */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
           
           {/* Left panel: Leave submission forms */}
@@ -354,7 +428,10 @@ export default function LeavePage() {
                       type="date"
                       required
                       value={form.startDate}
-                      onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, startDate: e.target.value }));
+                        setSelectionRange((r) => ({ ...r, start: e.target.value }));
+                      }}
                       className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border"
                       style={{ background: "var(--background)", border: inputBorder("startDate"), colorScheme: "dark" }}
                     />
@@ -365,7 +442,10 @@ export default function LeavePage() {
                       type="date"
                       required
                       value={form.endDate}
-                      onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, endDate: e.target.value }));
+                        setSelectionRange((r) => ({ ...r, end: e.target.value }));
+                      }}
                       className="w-full px-4 py-2.5 rounded-xl text-xs text-foreground outline-none border"
                       style={{ background: "var(--background)", border: inputBorder("endDate"), colorScheme: "dark" }}
                     />
@@ -392,11 +472,8 @@ export default function LeavePage() {
                 </button>
               </form>
             </div>
-          </div>
 
-          {/* Right panel: Balance allocation card & personal log history */}
-          <div className="space-y-4">
-            {/* Allocation Balance Card */}
+            {/* Leave Allocations Stats Card */}
             <div className="rounded-2xl border p-5 glass-panel" style={{ borderColor: "var(--card-border)" }}>
               <h3 className="font-bold text-foreground text-sm mb-4">Leave Allocations</h3>
               <div className="grid grid-cols-3 gap-4 text-center">
@@ -410,6 +487,89 @@ export default function LeavePage() {
                     <div className={`text-xs font-extrabold mt-2 ${alloc.color}`}>{alloc.balance}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel: Calendar Date Selector & My Leave Requests */}
+          <div className="space-y-4">
+            
+            {/* Interactive Leave Calendar Picker */}
+            <div className="rounded-2xl border p-5 glass-panel space-y-4" style={{ borderColor: "var(--card-border)" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-foreground text-xs uppercase tracking-wider">Leave Calendar Picker</h3>
+                  <p className="text-[9px] text-muted">Click a start day and end day to select leave range</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => adjustCalendarMonth(-1)} className="p-1 border rounded-lg hover:bg-slate-500/5 transition-all text-slate-400 hover:text-white cursor-pointer" style={{ borderColor: "var(--card-border)" }}>
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[11px] font-bold text-foreground capitalize w-20 text-center font-precise">
+                    {calendarMonth.toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                  </span>
+                  <button onClick={() => adjustCalendarMonth(1)} className="p-1 border rounded-lg hover:bg-slate-500/5 transition-all text-slate-400 hover:text-white cursor-pointer" style={{ borderColor: "var(--card-border)" }}>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 gap-1.5 text-center font-bold text-[9px] text-slate-400 uppercase tracking-widest border-b pb-2" style={{ borderColor: "var(--card-border)" }}>
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+
+              {/* Calendar cells */}
+              <div className="grid grid-cols-7 gap-1.5">
+                {getCalendarCells().map((cell, idx) => {
+                  if (!cell.dateStr) {
+                    return <div key={`empty-${idx}`} className="h-10 rounded-lg bg-slate-500/5 opacity-20 border border-transparent" />;
+                  }
+
+                  const isStart = cell.dateStr === selectionRange.start;
+                  const isEnd = cell.dateStr === selectionRange.end;
+                  const inRange = selectionRange.start && selectionRange.end &&
+                    cell.dateStr >= selectionRange.start && cell.dateStr <= selectionRange.end;
+
+                  const isToday = cell.dateStr === new Date().toISOString().split("T")[0];
+
+                  let cellBg = "rgba(255,255,255,0.01)";
+                  let borderCol = "var(--card-border)";
+                  let textCol = "text-foreground";
+
+                  if (cell.status === "ApprovedLeave") {
+                    cellBg = "rgba(59,130,246,0.12)";
+                    borderCol = "rgba(59,130,246,0.3)";
+                    textCol = "text-blue-400";
+                  } else if (isStart || isEnd) {
+                    cellBg = "var(--primary)";
+                    borderCol = "var(--primary)";
+                    textCol = "text-white font-extrabold";
+                  } else if (inRange) {
+                    cellBg = "rgba(99,102,241,0.15)";
+                    borderCol = "rgba(99,102,241,0.25)";
+                    textCol = "text-indigo-400";
+                  } else if (isToday) {
+                    borderCol = "var(--primary)";
+                  }
+
+                  return (
+                    <div
+                      key={cell.dateStr}
+                      onClick={() => handleCalendarDayClick(cell.dateStr)}
+                      className={`h-10 rounded-lg border flex flex-col items-center justify-center text-[10px] font-bold cursor-pointer hover:border-indigo-400 transition-all select-none`}
+                      style={{
+                        background: cellBg,
+                        borderColor: borderCol
+                      }}
+                    >
+                      <span className={textCol}>{cell.dayNum}</span>
+                      {cell.status === "ApprovedLeave" && (
+                        <span className="h-1 w-1 rounded-full bg-blue-400 mt-0.5" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -444,6 +604,7 @@ export default function LeavePage() {
                 )}
               </div>
             </div>
+
           </div>
         </div>
       )}

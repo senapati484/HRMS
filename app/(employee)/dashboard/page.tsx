@@ -35,6 +35,12 @@ export default async function EmployeeDashboard() {
     }).lean()
   ]);
 
+  // Fetch logged-in user's recent logs for the Personal Dashboard
+  const [recentAttendanceRaw, recentLeavesRaw] = await Promise.all([
+    Attendance.find({ userId: decoded.userId }).sort({ date: -1 }).limit(5).lean(),
+    Leave.find({ userId: decoded.userId }).sort({ createdAt: -1 }).limit(5).lean()
+  ]);
+
   const employeesMapped = usersRaw.map((u: any) => {
     const att = attendancesRaw.find((a: any) => a.userId.toString() === u._id.toString());
     const leave = leavesRaw.find((l: any) => l.userId.toString() === u._id.toString());
@@ -66,7 +72,27 @@ export default async function EmployeeDashboard() {
     dob: user.dob ? user.dob.toISOString() : undefined,
   };
 
+  const recentAttendanceSerialized = recentAttendanceRaw.map((a: any) => ({
+    ...a,
+    _id: a._id.toString(),
+    checkIn: a.checkIn ? a.checkIn.toISOString() : undefined,
+    checkOut: a.checkOut ? a.checkOut.toISOString() : undefined,
+  }));
+
+  const recentLeavesSerialized = recentLeavesRaw.map((l: any) => ({
+    ...l,
+    _id: l._id.toString(),
+    startDate: l.startDate ? l.startDate.toISOString() : undefined,
+    endDate: l.endDate ? l.endDate.toISOString() : undefined,
+    createdAt: l.createdAt ? l.createdAt.toISOString() : undefined,
+  }));
+
   return (
-    <DashboardClient currentUser={currentUserSerialized} initialEmployees={employeesMapped} />
+    <DashboardClient 
+      currentUser={currentUserSerialized} 
+      initialEmployees={employeesMapped}
+      recentAttendance={recentAttendanceSerialized}
+      recentLeaves={recentLeavesSerialized}
+    />
   );
 }
