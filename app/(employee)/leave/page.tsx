@@ -232,7 +232,6 @@ export default function LeavePage() {
                     style={{
                       background: "var(--background)",
                       border: inputBorder("startDate"),
-                      colorScheme: "dark",
                     }}
                   />
                 </div>
@@ -249,7 +248,6 @@ export default function LeavePage() {
                     style={{
                       background: "var(--background)",
                       border: inputBorder("endDate"),
-                      colorScheme: "dark",
                     }}
                   />
                 </div>
@@ -313,7 +311,7 @@ export default function LeavePage() {
                       <StatusBadge status={l.status} />
                     </div>
                     {l.remarks && (
-                      <p className="text-xs bg-slate-100 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-white/5" style={{ color: "var(--muted)" }}>
+                      <p className="text-xs bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-200 dark:border-white/5 text-foreground/80">
                         {l.remarks}
                       </p>
                     )}

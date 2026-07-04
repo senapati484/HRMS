@@ -35,7 +35,7 @@ export default function EmployeePayrollPage() {
     <div className="p-6 space-y-6 max-w-3xl mx-auto">
       <div className="flex justify-between items-start gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">My Payroll</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">My Payroll</h1>
           <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
             Monthly salary breakdown and payslip information
           </p>
@@ -43,7 +43,7 @@ export default function EmployeePayrollPage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-white py-16 animate-pulse font-medium">
+        <div className="text-center text-foreground py-16 animate-pulse font-medium">
           Loading payroll information...
         </div>
       ) : error ? (
@@ -74,7 +74,7 @@ export default function EmployeePayrollPage() {
                   <div className="w-6 h-6 rounded bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                     <ShieldCheck size={14} />
                   </div>
-                  <h2 className="text-lg font-bold text-white font-precise">Monthly Payslip</h2>
+                  <h2 className="text-lg font-bold text-foreground font-precise">Monthly Payslip</h2>
                 </div>
                 <p className="text-xs" style={{ color: "var(--muted)" }}>
                   Acme Corp · Verified &amp; Encrypted
@@ -95,7 +95,7 @@ export default function EmployeePayrollPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
                 <span style={{ color: "var(--muted)" }}>Basic Salary</span>
-                <span className="font-semibold text-white font-mono">
+                <span className="font-semibold text-foreground font-mono">
                   ₹{(payroll.basic ?? 0).toLocaleString("en-IN")}
                 </span>
               </div>
@@ -116,7 +116,7 @@ export default function EmployeePayrollPage() {
                 className="border-t pt-5 flex justify-between items-center"
                 style={{ borderColor: "var(--card-border)" }}
               >
-                <span className="font-bold text-white text-sm font-precise uppercase tracking-wider">
+                <span className="font-bold text-foreground text-sm font-precise uppercase tracking-wider">
                   Net Take-Home Pay
                 </span>
                 <span
@@ -153,7 +153,7 @@ export default function EmployeePayrollPage() {
           </div>
         </div>
       ) : (
-        <div className="text-center text-white py-16 glass-panel rounded-2xl">
+        <div className="text-center text-foreground py-16 glass-panel rounded-2xl">
           No payroll records established for this user yet.
         </div>
       )}

@@ -106,7 +106,7 @@ export default function AttendancePage() {
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Attendance Log</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Attendance Log</h1>
         <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>
           Register daily check-ins and review weekly time logs
         </p>
@@ -122,16 +122,17 @@ export default function AttendancePage() {
             <Clock size={24} />
           </div>
           <div>
-            <h2 className="font-bold text-white text-sm tracking-wide font-precise">
+            <h2 className="font-bold text-foreground text-sm tracking-wide font-precise">
               Today —{" "}
               {new Date().toLocaleDateString("en-IN", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
+                
               })}
             </h2>
             {todayRecord ? (
-              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-300 font-mono">
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs font-mono" style={{ color: "var(--muted)" }}>
                 {todayRecord.checkIn && (
                   <span>
                     Check In:{" "}
@@ -224,10 +225,10 @@ export default function AttendancePage() {
             <div key={weekStart} className="rounded-2xl border overflow-hidden glass-panel">
               <div
                 className="px-6 py-4 border-b flex items-center gap-2"
-                style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.02)" }}
+                style={{ borderColor: "var(--card-border)", background: "rgba(255,255,255,0.01)" }}
               >
                 <Calendar size={16} className="text-indigo-400" />
-                <h3 className="text-sm font-bold text-white font-precise">
+                <h3 className="text-sm font-bold text-foreground font-precise">
                   Week of{" "}
                   {new Date(weekStart).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -235,11 +236,11 @@ export default function AttendancePage() {
                   })}
                 </h3>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-black/5 dark:divide-white/5">
                 {weekRecords.map((r) => (
-                  <div key={r._id} className="px-6 py-3.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                  <div key={r._id} className="px-6 py-3.5 flex items-center justify-between hover:bg-black/[0.01] dark:hover:bg-white/[0.01] transition-colors">
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-foreground">
                         {new Date(r.date + "T00:00:00").toLocaleDateString("en-IN", {
                           weekday: "short",
                           day: "numeric",
