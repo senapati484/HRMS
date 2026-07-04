@@ -124,16 +124,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-
-        {/* Demo hint */}
-        <div className="mt-4 p-4 rounded-xl text-xs text-center border font-precise"
-          style={{
-            background: "rgba(99,102,241,0.04)",
-            color: "var(--muted)",
-            borderColor: "var(--card-border)",
-          }}>
-          Demo Credentials: <strong className="text-foreground">admin@acme.in</strong> / <span className="font-mono text-indigo-400">Password123!</span>
-        </div>
       </div>
     </div>
   );
